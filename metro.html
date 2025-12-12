@@ -27,11 +27,10 @@
       color: #202124;
     }
 
-    /* Floating Action Buttons (FAB) & Tool Buttons */
     .fab-btn {
       width: 3.5rem;
       height: 3.5rem;
-      border-radius: 16px; /* Material 3 square-ish rounded */
+      border-radius: 16px;
       background-color: var(--surface-color);
       color: var(--google-grey);
       display: flex;
@@ -48,8 +47,8 @@
       color: #202124;
     }
     .fab-btn.active {
-      background-color: #c2e7ff; /* M3 Active Container */
-      color: #001d35; /* M3 On Active Container */
+      background-color: #c2e7ff;
+      color: #001d35;
       box-shadow: none;
       border: 1px solid transparent;
     }
@@ -58,7 +57,6 @@
     }
     .fab-btn svg { width: 1.5rem; height: 1.5rem; }
 
-    /* Line Chips */
     .line-chip {
       transition: all 0.2s;
       background: var(--surface-color);
@@ -76,7 +74,6 @@
       border-color: #d2e3fc;
     }
 
-    /* Typography inside SVG */
     text {
       font-family: 'Google Sans', 'Roboto', sans-serif;
       font-weight: 500;
@@ -105,7 +102,6 @@
 
     #ghostPath, #ghostStop, #ghostInterchange, #ghostTextAnchor { pointer-events: none; }
 
-    /* Button Styles */
     .btn-primary {
       background-color: var(--google-blue);
       color: white;
@@ -132,11 +128,8 @@
       font-size: 0.875rem;
       background: transparent;
     }
-    .btn-text:hover {
-      background-color: #f5f8fd; /* Light blue tint */
-    }
+    .btn-text:hover { background-color: #f5f8fd; }
 
-    /* Modal */
     .modal-card {
       border-radius: 28px;
       box-shadow: 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12), 0 11px 15px -7px rgba(0,0,0,0.2);
@@ -146,10 +139,8 @@
 
 <body class="flex flex-col h-screen">
 
-  <!-- App Bar (Top) -->
   <header class="h-16 bg-white flex items-center px-4 justify-between z-20 absolute top-0 w-full border-b border-[#dadce0]">
     <div class="flex items-center gap-3 pl-2">
-      <!-- Google Maps-style Transit Icon -->
       <div class="w-10 h-10 flex items-center justify-center text-[#1a73e8]">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
           <path d="M17.8 4.8C16.07 3.74 14.12 3.5 12 3.5c-2.12 0-4.07.24-5.8 1.3C4.24 6.03 3.5 8.05 3.5 10.5v6c0 2.56 1.92 4.67 4.41 4.95L6.5 23h11l-1.41-1.55c2.49-.28 4.41-2.39 4.41-4.95v-6c0-2.45-.74-4.47-2.7-5.7zM7.5 17.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm11-6.5h-13V8h13v3zm-2 6.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
@@ -175,9 +166,7 @@
     </div>
   </header>
 
-  <!-- Canvas Container -->
   <div class="flex-1 relative bg-[#f8f9fa] pt-16 overflow-hidden">
-    <!-- Map Area -->
     <div class="absolute inset-0 z-0">
       <svg id="svgMap"
            xmlns="http://www.w3.org/2000/svg"
@@ -203,12 +192,10 @@
       </svg>
     </div>
 
-    <!-- Lines List (Left Bottom) -->
     <div class="absolute bottom-6 left-6 z-30 flex flex-col-reverse gap-2 items-start pointer-events-none max-h-[50vh]">
       <div id="lines-container" class="flex flex-col-reverse gap-2 pointer-events-auto overflow-y-auto pr-2 pb-2"></div>
     </div>
 
-    <!-- Tools (Bottom Center Floating Card) -->
     <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 pointer-events-auto">
         <div class="bg-white rounded-[20px] p-2 shadow-[0_2px_6px_rgba(60,64,67,0.15),0_1px_2px_rgba(60,64,67,0.3)] flex gap-2 border border-[#dadce0]">
             <button id="tool-line" onclick="setTool('line')" class="fab-btn active" title="Línea">
@@ -228,7 +215,6 @@
     </div>
   </div>
 
-  <!-- Text Input Modal -->
   <div id="textModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-[2px]">
     <div class="bg-white modal-card w-80 transform transition-all scale-100 p-6 flex flex-col">
       <h3 class="text-xl font-normal text-[#202124] mb-4" style="font-family: 'Google Sans', sans-serif;">Añadir Etiqueta</h3>
@@ -268,7 +254,7 @@
       hoverStop: null,
       hoverInterchange: null,
       hoverDeleteElement: null,
-      hoverTextSnap: null, // New: track endpoint snap for text
+      hoverTextSnap: null,
       visualSegments: [],
       drawSide: 0,
       drawStamp: 0,
@@ -307,7 +293,6 @@
       return Math.round(v / h) * h;
     }
 
-    // --- TOOLING ---
     function setTool(tool) {
       state.tool = tool;
       ['line','stop','interchange','text'].forEach(t => {
@@ -347,7 +332,6 @@
       renderMap();
     }
 
-    // --- LINE MANAGEMENT ---
     function createNewLine() {
       const id = 'line_' + Date.now();
       const colors = ['#EA4335', '#4285F4', '#34A853', '#FBBC04', '#AB47BC', '#EC407A', '#5C6BC0', '#26A69A', '#FF7043', '#78909C'];
@@ -386,7 +370,6 @@
       });
     }
 
-    // --- CORE FUNCTIONS ---
     function getEdgeKey(x1, y1, x2, y2) {
       const p1 = `${Math.round(x1)},${Math.round(y1)}`;
       const p2 = `${Math.round(x2)},${Math.round(y2)}`;
@@ -409,89 +392,331 @@
       return dot >= 0 ? 1 : -1;
     }
 
+    // =========================================================
+    // FIX (1): solo líneas rectas (conectores rectos)
+    // FIX (2): elimina "trenzado" (orden estable + propagación de carriles)
+    // FIX (3): al salir de corredores, NO recenter brusco (ancla por componente)
+    // =========================================================
     function computeVisualSegments(currentSegments) {
       state.visualSegments = [];
-      const edgeMap = new Map();
 
+      // Global line order (estable)
+      const lineOrder = new Map();
+      linesData.forEach((l, i) => lineOrder.set(l.id, i));
+
+      // Degrees por (lineId,node) para recortar y usar conectores rectos
+      const degByLineNode = new Map(); // lineId -> Map(nodeKey->deg)
+      const incDeg = (lineId, nodeKey) => {
+        if (!degByLineNode.has(lineId)) degByLineNode.set(lineId, new Map());
+        const m = degByLineNode.get(lineId);
+        m.set(nodeKey, (m.get(nodeKey) || 0) + 1);
+      };
+      currentSegments.forEach(s => {
+        incDeg(s.lineId, `${Math.round(s.x1)},${Math.round(s.y1)}`);
+        incDeg(s.lineId, `${Math.round(s.x2)},${Math.round(s.y2)}`);
+      });
+
+      // Agrupar por edge
+      const edgeMap = new Map();
       currentSegments.forEach(seg => {
         const key = getEdgeKey(seg.x1, seg.y1, seg.x2, seg.y2);
         if (!edgeMap.has(key)) edgeMap.set(key, []);
         edgeMap.get(key).push(seg);
       });
 
-      edgeMap.forEach((segsInEdge) => {
-        const refSeg = segsInEdge[0];
-        const p1Str = `${Math.round(refSeg.x1)},${Math.round(refSeg.y1)}`;
-        const p2Str = `${Math.round(refSeg.x2)},${Math.round(refSeg.y2)}`;
+      const strokeWidth = 10;
+      const lineSpacing = 4;
+      const step = strokeWidth + lineSpacing; // 14
+      const GAP = 8; // recorte para dejar hueco al conector recto (sin curvas)
+
+      // Construir edges
+      const edges = [];
+      const edgeByKey = new Map();
+
+      const rankSide = (seg) => {
+        const side = (seg && typeof seg.side === 'number') ? seg.side : 0;
+        return side < 0 ? 0 : (side > 0 ? 2 : 1);
+      };
+
+      edgeMap.forEach((segsInEdge, key) => {
+        const ref = segsInEdge[0];
+        const p1Str = `${Math.round(ref.x1)},${Math.round(ref.y1)}`;
+        const p2Str = `${Math.round(ref.x2)},${Math.round(ref.y2)}`;
 
         let cx1, cy1, cx2, cy2;
-        if (p1Str < p2Str) { cx1 = refSeg.x1; cy1 = refSeg.y1; cx2 = refSeg.x2; cy2 = refSeg.y2; }
-        else { cx1 = refSeg.x2; cy1 = refSeg.y2; cx2 = refSeg.x1; cy2 = refSeg.y1; }
+        if (p1Str < p2Str) { cx1 = ref.x1; cy1 = ref.y1; cx2 = ref.x2; cy2 = ref.y2; }
+        else { cx1 = ref.x2; cy1 = ref.y2; cx2 = ref.x1; cy2 = ref.y1; }
 
         const dx = cx2 - cx1;
         const dy = cy2 - cy1;
         const len = Math.sqrt(dx*dx + dy*dy) || 1;
+
+        // Normal consistente por edge (canónico)
         const nx = -dy / len;
         const ny = dx / len;
 
-        const rankSide = (s) => {
-          const side = (s && typeof s === 'number') ? s : 0;
-          return side < 0 ? 0 : (side > 0 ? 2 : 1);
-        };
-
-        segsInEdge.sort((a, b) => {
-          const ra = rankSide(a.side);
-          const rb = rankSide(b.side);
+        // Orden LOCAL estable (sin usar created -> elimina trenzado)
+        const ordered = segsInEdge.slice().sort((a, b) => {
+          const ra = rankSide(a), rb = rankSide(b);
           if (ra !== rb) return ra - rb;
 
-          const ca = (typeof a.created === 'number') ? a.created : 0;
-          const cb = (typeof b.created === 'number') ? b.created : 0;
-
-          if (ra === 0) { if (cb !== ca) return cb - ca; }
-          else if (ra === 2) { if (ca !== cb) return ca - cb; }
-          else { if (ca !== cb) return ca - cb; }
+          const ia = lineOrder.has(a.lineId) ? lineOrder.get(a.lineId) : 1e9;
+          const ib = lineOrder.has(b.lineId) ? lineOrder.get(b.lineId) : 1e9;
+          if (ia !== ib) return ia - ib;
 
           return a.lineId.localeCompare(b.lineId);
         });
 
-        const count = segsInEdge.length;
-        const strokeWidth = 10;
-        // MARGIN ADDED: 4px gap between lines
-        const lineSpacing = 4;
-        const totalLineStep = strokeWidth + lineSpacing;
-        const startOffset = -((count - 1) * totalLineStep) / 2;
-        const GAP = 8;
+        const n1Key = `${Math.round(cx1)},${Math.round(cy1)}`;
+        const n2Key = `${Math.round(cx2)},${Math.round(cy2)}`;
 
-        segsInEdge.forEach((seg, index) => {
-          const offset = startOffset + (index * totalLineStep);
-          const ox1 = cx1 + nx * offset;
-          const oy1 = cy1 + ny * offset;
-          const ox2 = cx2 + nx * offset;
-          const oy2 = cy2 + ny * offset;
+        const edge = {
+          key,
+          cx1, cy1, cx2, cy2,
+          n1Key, n2Key,
+          nx, ny,
+          segs: ordered,
+          localOrderLineIds: ordered.map(s => s.lineId),
+          localLineSet: new Set(ordered.map(s => s.lineId)),
+          laneByLine: new Map(),
+          compId: -1
+        };
+        edges.push(edge);
+        edgeByKey.set(key, edge);
+      });
 
-          const isForward = (Math.round(seg.x1) === Math.round(cx1) && Math.round(seg.y1) === Math.round(cy1));
+      // Node -> incident edges
+      const nodeEdges = new Map();
+      const addNodeEdge = (nodeKey, edge) => {
+        if (!nodeEdges.has(nodeKey)) nodeEdges.set(nodeKey, []);
+        nodeEdges.get(nodeKey).push(edge);
+      };
+      edges.forEach(e => { addNodeEdge(e.n1Key, e); addNodeEdge(e.n2Key, e); });
+
+      // Adyacencias (solo si comparten AL MENOS una línea en ese nodo)
+      const adj = new Map();
+      edges.forEach(e => adj.set(e.key, new Set()));
+
+      nodeEdges.forEach(list => {
+        for (let i = 0; i < list.length; i++) {
+          for (let j = i + 1; j < list.length; j++) {
+            const a = list[i], b = list[j];
+
+            // Intersección rápida: iterar por el más pequeño
+            let shared = false;
+            const small = a.localLineSet.size <= b.localLineSet.size ? a : b;
+            const big = small === a ? b : a;
+            for (const lid of small.localLineSet) {
+              if (big.localLineSet.has(lid)) { shared = true; break; }
+            }
+            if (shared) {
+              adj.get(a.key).add(b.key);
+              adj.get(b.key).add(a.key);
+            }
+          }
+        }
+      });
+
+      // Helper: asignar carriles al hijo basado en el padre (con huecos si hace falta)
+      const pickNearestFree = (occupied, desired) => {
+        let d = 0;
+        while (d < 2048) {
+          const a = desired - d;
+          const b = desired + d;
+          if (!occupied.has(a)) { occupied.add(a); return a; }
+          if (d !== 0 && !occupied.has(b)) { occupied.add(b); return b; }
+          d++;
+        }
+        let v = desired;
+        while (occupied.has(v)) v++;
+        occupied.add(v);
+        return v;
+      };
+
+      const assignFromParent = (parent, child) => {
+        const assigned = new Map();
+        const occupied = new Set();
+
+        // 1) Copiar carriles para líneas compartidas
+        for (const lid of child.localOrderLineIds) {
+          if (parent.laneByLine.has(lid)) {
+            const lane = parent.laneByLine.get(lid);
+            assigned.set(lid, lane);
+            occupied.add(lane);
+          }
+        }
+
+        // 2) Insertar líneas nuevas en huecos cercanos (sin recolocar las existentes)
+        const order = child.localOrderLineIds;
+        for (let i = 0; i < order.length; i++) {
+          const lid = order[i];
+          if (assigned.has(lid)) continue;
+
+          // buscar vecinos asignados en el orden local
+          let leftLane = null, rightLane = null;
+          for (let k = i - 1; k >= 0; k--) {
+            const l2 = order[k];
+            if (assigned.has(l2)) { leftLane = assigned.get(l2); break; }
+          }
+          for (let k = i + 1; k < order.length; k++) {
+            const l2 = order[k];
+            if (assigned.has(l2)) { rightLane = assigned.get(l2); break; }
+          }
+
+          let desired = 0;
+
+          if (leftLane !== null && rightLane !== null) {
+            const lo = Math.min(leftLane, rightLane);
+            const hi = Math.max(leftLane, rightLane);
+            const mid = Math.round((leftLane + rightLane) / 2);
+
+            // intentar hueco dentro [lo..hi]
+            let best = null, bestDist = Infinity;
+            for (let s = lo; s <= hi; s++) {
+              if (!occupied.has(s)) {
+                const dist = Math.abs(s - mid);
+                if (dist < bestDist) { best = s; bestDist = dist; }
+              }
+            }
+            if (best !== null) {
+              occupied.add(best);
+              assigned.set(lid, best);
+              continue;
+            }
+            desired = (leftLane < rightLane) ? leftLane + 1 : rightLane + 1;
+          } else if (leftLane !== null) {
+            desired = leftLane + 1;
+          } else if (rightLane !== null) {
+            desired = rightLane - 1;
+          } else {
+            // edge aislado dentro del componente (raro)
+            desired = 0;
+          }
+
+          const lane = pickNearestFree(occupied, desired);
+          assigned.set(lid, lane);
+        }
+
+        child.laneByLine = assigned;
+      };
+
+      // Componentes conectados de edges (por continuidad de líneas)
+      const compAnchors = new Map();
+      let compId = 0;
+      const visited = new Set();
+
+      const bfs = (rootKey) => {
+        const q = [rootKey];
+        const compEdges = [];
+        visited.add(rootKey);
+
+        while (q.length) {
+          const k = q.shift();
+          const e = edgeByKey.get(k);
+          e.compId = compId;
+          compEdges.push(e);
+
+          for (const nb of adj.get(k)) {
+            if (!visited.has(nb)) {
+              visited.add(nb);
+              q.push(nb);
+            }
+          }
+        }
+        return compEdges;
+      };
+
+      for (const e of edges) {
+        if (visited.has(e.key)) continue;
+
+        const compEdges = bfs(e.key);
+
+        // elegir root con más líneas (mejor ancla)
+        compEdges.sort((a, b) => {
+          const da = a.segs.length, db = b.segs.length;
+          if (db !== da) return db - da;
+          return a.key.localeCompare(b.key);
+        });
+        const root = compEdges[0];
+
+        // lane root: 0..k-1 según orden local
+        root.laneByLine = new Map();
+        root.localOrderLineIds.forEach((lid, idx) => root.laneByLine.set(lid, idx));
+
+        // anchor del componente (centra el root)
+        let anchor = (root.localOrderLineIds.length - 1) / 2;
+
+        // Propagar carriles BFS desde root (mantiene carriles -> evita recenter/brusco)
+        const q = [root];
+        const seenEdges = new Set([root.key]);
+
+        while (q.length) {
+          const cur = q.shift();
+          for (const nbKey of adj.get(cur.key)) {
+            const nb = edgeByKey.get(nbKey);
+            if (!nb || nb.compId !== compId) continue;
+            if (seenEdges.has(nb.key)) continue;
+
+            assignFromParent(cur, nb);
+            seenEdges.add(nb.key);
+            q.push(nb);
+          }
+        }
+
+        // Normalizar (evitar carriles negativos), pero shift GLOBAL del componente
+        let minLane = Infinity;
+        compEdges.forEach(ed => {
+          for (const v of ed.laneByLine.values()) minLane = Math.min(minLane, v);
+        });
+        if (!isFinite(minLane)) minLane = 0;
+        if (minLane < 0) {
+          const shift = -minLane;
+          compEdges.forEach(ed => {
+            const m = new Map();
+            for (const [lid, v] of ed.laneByLine.entries()) m.set(lid, v + shift);
+            ed.laneByLine = m;
+          });
+          anchor += shift;
+        }
+
+        compAnchors.set(compId, anchor);
+        compId++;
+      }
+
+      // Emitir visualSegments (líneas rectas, con recorte para conectores rectos)
+      for (const e of edges) {
+        const anchor = compAnchors.get(e.compId) ?? ((e.segs.length - 1) / 2);
+
+        for (const seg of e.segs) {
+          const lane = e.laneByLine.get(seg.lineId);
+          // fallback ultra seguro
+          const laneIdx = (typeof lane === 'number') ? lane : e.localOrderLineIds.indexOf(seg.lineId);
+
+          const offsetScalar = (laneIdx - anchor) * step;
+
+          const ox1 = e.cx1 + e.nx * offsetScalar;
+          const oy1 = e.cy1 + e.ny * offsetScalar;
+          const ox2 = e.cx2 + e.nx * offsetScalar;
+          const oy2 = e.cy2 + e.ny * offsetScalar;
+
+          const isForward = (Math.round(seg.x1) === Math.round(e.cx1) && Math.round(seg.y1) === Math.round(e.cy1));
           let vrx1, vry1, vrx2, vry2;
           if (isForward) { vrx1 = ox1; vry1 = oy1; vrx2 = ox2; vry2 = oy2; }
           else { vrx1 = ox2; vry1 = oy2; vrx2 = ox1; vry2 = oy1; }
 
-          // segment shortened ONLY for drawing the line itself
-          const segmentLen = Math.sqrt((vrx2-vrx1)**2 + (vry2-vry1)**2);
+          const segmentLen = Math.hypot(vrx2 - vrx1, vry2 - vry1) || 1;
+          const dirX = (vrx2 - vrx1) / segmentLen;
+          const dirY = (vry2 - vry1) / segmentLen;
+
           let sx1 = vrx1, sy1 = vry1, sx2 = vrx2, sy2 = vry2;
 
+          const degMap = degByLineNode.get(seg.lineId) || new Map();
+          const nodeStartKey = `${Math.round(seg.x1)},${Math.round(seg.y1)}`;
+          const nodeEndKey   = `${Math.round(seg.x2)},${Math.round(seg.y2)}`;
+          const degStart = degMap.get(nodeStartKey) || 1;
+          const degEnd   = degMap.get(nodeEndKey) || 1;
+
           if (segmentLen > GAP * 2.5) {
-            const dirX = (vrx2 - vrx1) / segmentLen;
-            const dirY = (vry2 - vry1) / segmentLen;
-
-            const getLineDegree = (key, lId) => {
-              return currentSegments.filter(s => s.lineId === lId &&
-                ((Math.round(s.x1)+','+Math.round(s.y1)) === key ||
-                 (Math.round(s.x2)+','+Math.round(s.y2)) === key)
-              ).length;
-            };
-
-            const degStart = getLineDegree(`${Math.round(seg.x1)},${Math.round(seg.y1)}`, seg.lineId);
-            const degEnd   = getLineDegree(`${Math.round(seg.x2)},${Math.round(seg.y2)}`, seg.lineId);
-
             if (degStart > 1) { sx1 = vrx1 + dirX * GAP; sy1 = vry1 + dirY * GAP; }
             if (degEnd > 1)   { sx2 = vrx2 - dirX * GAP; sy2 = vry2 - dirY * GAP; }
           }
@@ -499,18 +724,17 @@
           state.visualSegments.push({
             id: seg.id,
             lineId: seg.lineId,
-            // shortened (for line render)
+            // trimmed para render
             rx1: sx1, ry1: sy1, rx2: sx2, ry2: sy2,
-            // ORIGINAL (true anchor points on grid / midpoints)
+            // untrimmed (ancla real)
             origRx1: vrx1, origRy1: vry1, origRx2: vrx2, origRy2: vry2,
             // logical
             gx1: seg.x1, gy1: seg.y1, gx2: seg.x2, gy2: seg.y2
           });
-        });
-      });
+        }
+      }
     }
 
-    // --- STOP VISUAL POS ---
     function stopVisualPosFromSegId(segId, t) {
       const vSeg = state.visualSegments.find(v => v.id === segId);
       if (!vSeg) return null;
@@ -601,6 +825,7 @@
         const lineVSegs = state.visualSegments.filter(vs => vs.lineId === line.id);
         if (lineVSegs.length === 0) return;
 
+        // Segmentos rectos
         lineVSegs.forEach(vs => {
           const el = document.createElementNS("http://www.w3.org/2000/svg", "line");
           el.setAttribute("x1", vs.rx1); el.setAttribute("y1", vs.ry1);
@@ -611,42 +836,47 @@
           lineGroup.appendChild(el);
         });
 
-        const nodeMap = new Map();
+        // Conectores rectos por línea y nodo (sin curvas, sin "merge-then-split")
+        const nodeMap = new Map(); // nodeKey -> [{x,y},...]
         lineVSegs.forEach(vs => {
           const k1 = `${Math.round(vs.gx1)},${Math.round(vs.gy1)}`;
           const k2 = `${Math.round(vs.gx2)},${Math.round(vs.gy2)}`;
           if (!nodeMap.has(k1)) nodeMap.set(k1, []);
           if (!nodeMap.has(k2)) nodeMap.set(k2, []);
-
-          const l1 = Math.hypot(vs.rx2 - vs.rx1, vs.ry2 - vs.ry1);
-          if (l1 > 0.1) nodeMap.get(k1).push({ x: vs.rx1, y: vs.ry1, vx: (vs.rx2-vs.rx1)/l1, vy: (vs.ry2-vs.ry1)/l1 });
-
-          const l2 = Math.hypot(vs.rx1 - vs.rx2, vs.ry1 - vs.ry2);
-          if (l2 > 0.1) nodeMap.get(k2).push({ x: vs.rx2, y: vs.ry2, vx: (vs.rx1-vs.rx2)/l2, vy: (vs.ry1-vs.ry2)/l2 });
+          nodeMap.get(k1).push({ x: vs.rx1, y: vs.ry1 });
+          nodeMap.get(k2).push({ x: vs.rx2, y: vs.ry2 });
         });
 
-        nodeMap.forEach(points => {
-          if (points.length > 1) {
-            for (let i=0; i<points.length; i++) {
-              for (let j=i+1; j<points.length; j++) {
-                const p1 = points[i]; const p2 = points[j];
-                const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-                const scale = dist * 0.4;
-                const cp1x = p1.x - p1.vx * scale; const cp1y = p1.y - p1.vy * scale;
-                const cp2x = p2.x - p2.vx * scale; const cp2y = p2.y - p2.vy * scale;
+        nodeMap.forEach(pts => {
+          if (pts.length < 2) return;
 
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute("d", `M${p1.x},${p1.y} C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`);
-                path.setAttribute("stroke", line.color);
-                path.setAttribute("stroke-width", "10");
-                path.setAttribute("fill", "none");
-                path.setAttribute("class", "metro-connector metro-path");
-                lineGroup.appendChild(path);
-              }
-            }
+          if (pts.length === 2) {
+            const a = pts[0], b = pts[1];
+            const conn = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            conn.setAttribute("x1", a.x); conn.setAttribute("y1", a.y);
+            conn.setAttribute("x2", b.x); conn.setAttribute("y2", b.y);
+            conn.setAttribute("stroke", line.color);
+            conn.setAttribute("stroke-width", "10");
+            conn.setAttribute("class", "metro-connector metro-path");
+            lineGroup.appendChild(conn);
+          } else {
+            // Si hay ramificación dentro de la misma línea: unir a un centro (recto)
+            let sx = 0, sy = 0;
+            pts.forEach(p => { sx += p.x; sy += p.y; });
+            const cx = sx / pts.length, cy = sy / pts.length;
+            pts.forEach(p => {
+              const conn = document.createElementNS("http://www.w3.org/2000/svg", "line");
+              conn.setAttribute("x1", p.x); conn.setAttribute("y1", p.y);
+              conn.setAttribute("x2", cx);  conn.setAttribute("y2", cy);
+              conn.setAttribute("stroke", line.color);
+              conn.setAttribute("stroke-width", "10");
+              conn.setAttribute("class", "metro-connector metro-path");
+              lineGroup.appendChild(conn);
+            });
           }
         });
 
+        // Endpoints
         const segs = currentSegments.filter(s => s.lineId === line.id);
         const counts = {};
         segs.forEach(s => {
@@ -671,7 +901,7 @@
         }
       });
 
-      // --- GROUPING LOGIC FOR STOPS & INTERCHANGES ---
+      // --- STOPS / INTERCHANGES / TEXT ---
       const stopGroups = new Map();
       const interchangeGroups = new Map();
       const textElements = [];
@@ -681,9 +911,7 @@
           textElements.push(el);
           return;
         }
-        // Round to allow grouping of elements very close to same grid node
         const k = `${Math.round(el.x)},${Math.round(el.y)}`;
-        
         if (el.type === 'stop') {
           if (!stopGroups.has(k)) stopGroups.set(k, []);
           stopGroups.get(k).push(el);
@@ -693,9 +921,7 @@
         }
       });
 
-      // Draw Stops
-      stopGroups.forEach((group, key) => {
-        // Calculate visuals for all stops in this logical group
+      stopGroups.forEach((group) => {
         const visualPoints = group.map(el => {
           const vPos = stopVisualPosForElement(el, currentSegments);
           return { el, vPos };
@@ -703,11 +929,7 @@
 
         if (visualPoints.length === 0) return;
 
-        // If multiple lines share this stop, merge them visually
         if (visualPoints.length > 1) {
-          // Find the "outermost" points to draw a connecting line
-          // We assume corridor direction is roughly consistent
-          // Project points onto the perpendicular vector of the first stop to sort them
           const ref = visualPoints[0];
           const ang = ref.el.angle;
           const cos = Math.cos(ang), sin = Math.sin(ang);
@@ -716,18 +938,16 @@
           let minP = null, maxP = null;
 
           visualPoints.forEach(p => {
-            // Project p.vPos along the stop's angle vector
             const proj = p.vPos.x * cos + p.vPos.y * sin;
             if (proj < minProj) { minProj = proj; minP = p.vPos; }
             if (proj > maxProj) { maxProj = proj; maxP = p.vPos; }
           });
 
           const isHovered = group.some(el => el === state.hoverDeleteElement);
-          const strokeColor = isHovered ? "#ef4444" : "#000"; // Black by default for stops
+          const strokeColor = isHovered ? "#ef4444" : "#000";
 
           const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          const len = 5; // half length extension
-          // Extend out from the centers
+          const len = 5;
           line.setAttribute("x1", minP.x - cos * len);
           line.setAttribute("y1", minP.y - sin * len);
           line.setAttribute("x2", maxP.x + cos * len);
@@ -739,7 +959,6 @@
           layers.stops.appendChild(line);
 
         } else {
-          // Single Stop drawing
           const { el, vPos } = visualPoints[0];
           const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
           const len = 10;
@@ -755,15 +974,13 @@
           line.setAttribute("stroke-linecap", "round");
           line.setAttribute("class", "metro-path");
           
-          // Hover interactions
           line.addEventListener('mouseenter', () => highlightLine(el.lineId, true));
           line.addEventListener('mouseleave', () => highlightLine(el.lineId, false));
           layers.stops.appendChild(line);
         }
       });
 
-      // Draw Interchanges
-      interchangeGroups.forEach((group, key) => {
+      interchangeGroups.forEach((group) => {
         const visualPoints = group.map(el => {
           let cx = el.x, cy = el.y;
           if (el.lineId) {
@@ -775,7 +992,6 @@
 
         if (visualPoints.length === 0) return;
 
-        // Calculate geometric center of the group
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
         visualPoints.forEach(p => {
           if (p.x < minX) minX = p.x;
@@ -786,30 +1002,20 @@
 
         const cx = (minX + maxX) / 2;
         const cy = (minY + maxY) / 2;
-        
-        // Determine size: bigger if it spans multiple lines
-        // If single line, r=4. If spread out, make a pill or larger circle.
-        // Let's use a pill shape connecting min/max if needed, or just a circle fitting the corridor
         const spread = Math.hypot(maxX - minX, maxY - minY);
         
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        
         const isHovered = group.some(el => el === state.hoverDeleteElement);
         
         if (spread > 1) {
-           // Draw a pill (thick line with round caps)
            const pill = document.createElementNS("http://www.w3.org/2000/svg", "line");
            pill.setAttribute("x1", minX); pill.setAttribute("y1", minY);
            pill.setAttribute("x2", maxX); pill.setAttribute("y2", maxY);
-           pill.setAttribute("stroke", "white");
-           pill.setAttribute("stroke-width", "8"); // 8px wide pill
+           pill.setAttribute("stroke", isHovered ? "#ef4444" : "white");
+           pill.setAttribute("stroke-width", "8");
            pill.setAttribute("stroke-linecap", "round");
-           if (isHovered) {
-             pill.setAttribute("stroke", "#ef4444"); // Highlight entire merged group
-           }
            g.appendChild(pill);
         } else {
-           // Single circle
            const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
            c.setAttribute("cx", cx); c.setAttribute("cy", cy);
            c.setAttribute("r", "4");
@@ -823,7 +1029,6 @@
         layers.stops.appendChild(g);
       });
 
-      // Draw Text
       textElements.forEach(el => {
         const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
         t.setAttribute("x", el.x); t.setAttribute("y", el.y);
@@ -835,13 +1040,11 @@
       });
     }
 
-    // --- SNAP TO ENDPOINTS (FOR TEXT) ---
     function findEndpointSnap(mx, my) {
       const threshold = 15 * unitsPerPx();
       let best = null;
       let minD = Infinity;
 
-      // Collect all endpoints from segments
       const pointSet = new Set();
       segmentsData.forEach(s => {
         pointSet.add(`${Math.round(s.x1)},${Math.round(s.y1)}`);
@@ -859,7 +1062,6 @@
       return best;
     }
 
-    // --- Helpers ---
     function highlightLine(lineId, active) {
       const group = document.querySelector(`.line-group[data-line-id="${lineId}"]`);
       if (group) active ? group.classList.add('highlighted') : group.classList.remove('highlighted');
@@ -959,7 +1161,6 @@
       return newSegs;
     }
 
-    // --- STOP SNAP ---
     function findStopSnap(mx, my) {
       const threshold = 45 * unitsPerPx();
       let closest = null;
@@ -1014,8 +1215,8 @@
       return closest;
     }
 
-    // --- Endpoints drawing ---
     function getVisualPointForLine(lineId, gx, gy) {
+      if (!lineId) return null;
       const vSegs = state.visualSegments.filter(s => s.lineId === lineId);
       for (let vs of vSegs) {
         if (Math.abs(vs.gx1 - gx) < 1 && Math.abs(vs.gy1 - gy) < 1) return {x: vs.origRx1, y: vs.origRy1};
@@ -1085,7 +1286,6 @@
       container.appendChild(group);
     }
 
-    // --- ZOOM (WHEEL) ---
     svg.addEventListener('wheel', (e) => {
       e.preventDefault();
       const mouse = getSvgPoint(e);
@@ -1115,7 +1315,6 @@
       setViewBox();
     }, { passive: false });
 
-    // --- PAN (middle OR Space+drag) ---
     function startPan(e) {
       state.isPanning = true;
       state.panStartSvg = getSvgPoint(e);
@@ -1153,7 +1352,6 @@
 
     svg.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); });
 
-    // --- INTERACTION ---
     function onEndpointMouseDown(e, lineId, gx, gy) {
       if (e.button === 1 || (state.spaceDown && e.button === 0)) { e.preventDefault(); startPan(e); return; }
       e.stopPropagation(); e.preventDefault();
@@ -1173,14 +1371,13 @@
 
       const pos = getMousePos(e);
 
-      // Hit deletion priority
       if (state.hoverDeleteElement) {
         const idx = elementsData.findIndex(el => el.id === state.hoverDeleteElement.id);
         if (idx !== -1) {
           elementsData.splice(idx, 1);
           state.hoverDeleteElement = null;
           renderMap();
-          return; // Stop processing to prevent adding
+          return;
         }
       }
 
@@ -1225,19 +1422,17 @@
 
       const pos = getMousePos(e);
       let foundDelete = null;
-      const hitRadius = 12 * unitsPerPx(); 
+      const hitRadius = 12 * unitsPerPx();
 
-      // 1. Priority: Check for deletion of existing elements matching tool
       if (['stop', 'interchange', 'text'].includes(state.tool)) {
         for (const el of elementsData) {
           if (el.type !== state.tool) continue;
           
           let dist = Infinity;
           if (el.type === 'stop') {
-             // Calculate accurate visual center for hit test
              const vPos = stopVisualPosForElement(el, segmentsData);
              if (vPos) {
-                const mx = vPos.x + Math.cos(el.angle) * 5; // Midpoint of 10px line
+                const mx = vPos.x + Math.cos(el.angle) * 5;
                 const my = vPos.y + Math.sin(el.angle) * 5;
                 dist = Math.hypot(mx - pos.rawX, my - pos.rawY);
              }
@@ -1252,20 +1447,15 @@
              dist = Math.hypot(el.x - pos.rawX, el.y - pos.rawY);
           }
 
-          if (dist < hitRadius) {
-            foundDelete = el;
-            break; // Found one, stop looking
-          }
+          if (dist < hitRadius) { foundDelete = el; break; }
         }
       }
 
-      // Update Delete State
       if (foundDelete !== state.hoverDeleteElement) {
         state.hoverDeleteElement = foundDelete;
-        renderMap(); // Re-render to show red highlight
+        renderMap();
       }
 
-      // If in delete mode, hide ghosts and return
       if (state.hoverDeleteElement) {
         ghosts.stop.style.display = 'none';
         ghosts.interchange.style.display = 'none';
@@ -1273,7 +1463,6 @@
         return;
       }
 
-      // 2. Normal Tool Logic (Add ghosts)
       if (state.tool === 'line' && state.isDrawing) {
         const end = calculateSnappedEndPoint(state.startPos.x, state.startPos.y, pos.x, pos.y);
 
@@ -1342,17 +1531,10 @@
          const snap = findEndpointSnap(pos.rawX, pos.rawY);
          if (snap) {
             state.hoverTextSnap = snap;
-            // Need visual pos for snap endpoint to draw ghost
-            // Actually findEndpointSnap returns logical coord. We need visual point.
-            // Let's approximate visual point for the ghost by using first line found at that endpoint
-            const vPoint = getVisualPointForLine(state.drawingLineId || (linesData[0] ? linesData[0].id : null), snap.x, snap.y);
-            // Fallback if no lineId (search all lines)
-            let finalV = vPoint;
-            if (!finalV) {
-               for (const l of linesData) {
-                  finalV = getVisualPointForLine(l.id, snap.x, snap.y);
-                  if (finalV) break;
-               }
+            let finalV = null;
+            for (const l of linesData) {
+              finalV = getVisualPointForLine(l.id, snap.x, snap.y);
+              if (finalV) break;
             }
             if (finalV) {
                ghosts.textAnchor.setAttribute('cx', finalV.x);
@@ -1419,7 +1601,6 @@
 
     window.addEventListener('mouseup', () => { if (state.isPanning) stopPan(); });
 
-    // --- MODAL TEXTO ---
     const modal = document.getElementById('textModal');
     const input = document.getElementById('stationNameInput');
     function openTextModal() { modal.classList.remove('hidden'); input.value=''; input.focus(); }
@@ -1430,7 +1611,6 @@
     }
     input.addEventListener('keydown', e => { if(e.key === 'Enter') confirmText(); if(e.key === 'Escape') closeModal(); });
 
-    // --- EXPORT/IMPORT ---
     function exportSVG() {
       const clone = svg.cloneNode(true);
       const savedState = { linesData, segmentsData, elementsData };
