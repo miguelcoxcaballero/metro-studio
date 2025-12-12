@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metro Studio 5.2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --google-blue: #1a73e8;
+      --google-blue-hover: #1557b0;
+      --google-grey: #5f6368;
+      --surface-color: #ffffff;
+      --background-color: #f8f9fa;
+      --outline: #dadce0;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      user-select: none;
+      background-color: var(--background-color);
+      color: #202124;
+    }
+
+    /* Floating Action Buttons (FAB) & Tool Buttons */
+    .fab-btn {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 16px; /* Material 3 square-ish rounded */
+      background-color: var(--surface-color);
+      color: var(--google-grey);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+      border: 1px solid transparent;
+    }
+    .fab-btn:hover {
+      background-color: #f1f3f4;
+      box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+      transform: translateY(-1px);
+      color: #202124;
+    }
+    .fab-btn.active {
+      background-color: #c2e7ff; /* M3 Active Container */
+      color: #001d35; /* M3 On Active Container */
+      box-shadow: none;
+      border: 1px solid transparent;
+    }
+    .fab-btn.active:hover {
+      box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    }
+    .fab-btn svg { width: 1.5rem; height: 1.5rem; }
+
+    /* Line Chips */
+    .line-chip {
+      transition: all 0.2s;
+      background: var(--surface-color);
+      border: 1px solid var(--outline);
+      box-shadow: none;
+      pointer-events: auto;
+      border-radius: 8px;
+    }
+    .line-chip:hover {
+      background-color: #f1f3f4;
+      border-color: #dadce0;
+    }
+    .line-chip.active {
+      background-color: #e8f0fe;
+      border-color: #d2e3fc;
+    }
+
+    /* Typography inside SVG */
+    text {
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      font-weight: 500;
+      text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff;
+      pointer-events: none;
+      fill: #202124;
+    }
+
+    .metro-path {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke-width 0.1s;
+    }
+
+    .line-endpoint-group { cursor: grab; pointer-events: all; }
+    .line-endpoint-group:active { cursor: grabbing; }
+    .line-endpoint-visual { stroke-linecap: round; transition: stroke-width 0.1s; }
+
+    .line-group.highlighted .metro-path,
+    .line-group.highlighted .metro-connector {
+      stroke-width: 14px !important;
+      filter: brightness(0.95);
+    }
+    .line-group.highlighted .line-endpoint-visual { stroke-width: 14px !important; }
+
+    #ghostPath, #ghostStop, #ghostInterchange { pointer-events: none; }
+
+    /* Button Styles */
+    .btn-primary {
+      background-color: var(--google-blue);
+      color: white;
+      border-radius: 24px;
+      padding: 0 24px;
+      height: 40px;
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: background-color 0.2s;
+    }
+    .btn-primary:hover {
+      background-color: var(--google-blue-hover);
+      box-shadow: 0 1px 2px rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    }
+
+    .btn-text {
+      color: var(--google-blue);
+      border-radius: 24px;
+      padding: 0 16px;
+      height: 40px;
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.875rem;
+      background: transparent;
+    }
+    .btn-text:hover {
+      background-color: #f5f8fd; /* Light blue tint */
+    }
+
+    /* Modal */
+    .modal-card {
+      border-radius: 28px;
+      box-shadow: 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12), 0 11px 15px -7px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+
+<body class="flex flex-col h-screen">
+
+  <!-- App Bar (Top) -->
+  <header class="h-16 bg-white flex items-center px-4 justify-between z-20 absolute top-0 w-full border-b border-[#dadce0]">
+    <div class="flex items-center gap-3 pl-2">
+      <!-- Google Maps-style Transit Icon -->
+      <div class="w-10 h-10 flex items-center justify-center text-[#1a73e8]">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+          <path d="M17.8 4.8C16.07 3.74 14.12 3.5 12 3.5c-2.12 0-4.07.24-5.8 1.3C4.24 6.03 3.5 8.05 3.5 10.5v6c0 2.56 1.92 4.67 4.41 4.95L6.5 23h11l-1.41-1.55c2.49-.28 4.41-2.39 4.41-4.95v-6c0-2.45-.74-4.47-2.7-5.7zM7.5 17.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm11-6.5h-13V8h13v3zm-2 6.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+        </svg>
+      </div>
+      <h1 class="text-[22px] text-[#202124] tracking-tight font-normal" style="font-family: 'Google Sans', sans-serif;">Metro Studio</h1>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <label class="cursor-pointer btn-text flex items-center justify-center">
+        <input type="file" id="importInput" accept=".svg" class="hidden" onchange="importSVG(this)">
+        <span class="mr-2">Importar</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+        </svg>
+      </label>
+      <button onclick="exportSVG()" class="btn-primary flex items-center justify-center">
+        <span class="mr-2">Exportar</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Canvas Container -->
+  <div class="flex-1 relative bg-[#f8f9fa] pt-16 overflow-hidden">
+    <!-- Map Area -->
+    <div class="absolute inset-0 z-0">
+      <svg id="svgMap"
+           xmlns="http://www.w3.org/2000/svg"
+           class="w-full h-full cursor-crosshair"
+           viewBox="0 0 2000 1500"
+           preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <pattern id="grid" x="20" y="20" width="40" height="40" patternUnits="userSpaceOnUse">
+            <!-- Softer grid dots -->
+            <circle cx="20" cy="20" r="1.5" fill="#dadce0" />
+          </pattern>
+        </defs>
+        <!-- FIX: Explicit width/height to match map dimensions prevents disappearing grid on zoom -->
+        <rect x="0" y="0" width="2000" height="1500" fill="url(#grid)" id="grid-bg" />
+
+        <g id="layer-lines"></g>
+        <g id="layer-stops"></g>
+        <g id="layer-endpoints"></g>
+        <g id="layer-text"></g>
+
+        <path id="ghostPath" d="" fill="none" stroke="#bdc1c6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.6" style="display:none;" />
+        <line id="ghostStop" x1="0" y1="0" x2="0" y2="0" stroke="#202124" stroke-width="5" stroke-linecap="round" style="display:none;" />
+        <circle id="ghostInterchange" r="4" fill="white" style="display:none;" />
+      </svg>
+    </div>
+
+    <!-- Lines List (Left Bottom) -->
+    <div class="absolute bottom-6 left-6 z-30 flex flex-col-reverse gap-2 items-start pointer-events-none max-h-[50vh]">
+      <div id="lines-container" class="flex flex-col-reverse gap-2 pointer-events-auto overflow-y-auto pr-2 pb-2"></div>
+    </div>
+
+    <!-- Tools (Bottom Center Floating Card) -->
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 pointer-events-auto">
+        <div class="bg-white rounded-[20px] p-2 shadow-[0_2px_6px_rgba(60,64,67,0.15),0_1px_2px_rgba(60,64,67,0.3)] flex gap-2 border border-[#dadce0]">
+            <button id="tool-line" onclick="setTool('line')" class="fab-btn active" title="Línea">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </button>
+            <div class="w-[1px] bg-[#dadce0] my-2"></div>
+            <button id="tool-stop" onclick="setTool('stop')" class="fab-btn" title="Parada">
+                <!-- Rect Stop Icon -->
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 8H8V16H16V8Z"/></svg>
+            </button>
+            <button id="tool-interchange" onclick="setTool('interchange')" class="fab-btn" title="Intercambio">
+                <!-- Interchange Circle Icon -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/></svg>
+            </button>
+            <button id="tool-text" onclick="setTool('text')" class="fab-btn" title="Texto">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Text Input Modal -->
+  <div id="textModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-[2px]">
+    <div class="bg-white modal-card w-80 transform transition-all scale-100 p-6 flex flex-col">
+      <h3 class="text-xl font-normal text-[#202124] mb-4" style="font-family: 'Google Sans', sans-serif;">Añadir Etiqueta</h3>
+      <div class="relative mb-6">
+        <input type="text" id="stationNameInput"
+             class="peer w-full h-14 rounded-[4px] border border-[#dadce0] px-4 pt-4 text-base text-[#202124] outline-none focus:border-[#1a73e8] focus:border-2 transition-colors placeholder-transparent"
+             placeholder="Nombre" autocomplete="off">
+        <label for="stationNameInput" class="absolute left-4 top-1 text-xs text-[#5f6368] transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-xs peer-focus:text-[#1a73e8]">
+            Nombre de la estación
+        </label>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal()" class="text-[#1a73e8] hover:bg-[#f5f8fd] font-medium text-sm px-4 py-2.5 rounded-full transition-colors">Cancelar</button>
+        <button onclick="confirmText()" class="text-[#1a73e8] hover:bg-[#f5f8fd] font-medium text-sm px-4 py-2.5 rounded-full transition-colors">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let linesData = [];
+    let segmentsData = [];
+    let elementsData = [];
+
+    const MAP_W = 2000;
+    const MAP_H = 1500;
+
+    const view = { x: 0, y: 0, w: MAP_W, h: MAP_H, minZoom: 0.25, maxZoom: 10 };
+
+    const state = {
+      tool: 'line',
+      drawingLineId: null,
+      isDrawing: false,
+      startPos: { x: 0, y: 0 },
+      lastRenderedEnd: { x: 0, y: 0 },
+      gridSize: 40,
+      textPos: null,
+      hoverStop: null,
+      hoverInterchange: null, // Track interchange snap
+      visualSegments: [],
+      drawSide: 0,
+      drawStamp: 0,
+
+      isPanning: false,
+      panStartSvg: null,
+      panStartView: null,
+      spaceDown: false
+    };
+
+    const svg = document.getElementById('svgMap');
+    const layers = {
+      lines: document.getElementById('layer-lines'),
+      endpoints: document.getElementById('layer-endpoints'),
+      stops: document.getElementById('layer-stops'),
+      text: document.getElementById('layer-text')
+    };
+    const ghosts = {
+      stop: document.getElementById('ghostStop'),
+      interchange: document.getElementById('ghostInterchange'),
+      path: document.getElementById('ghostPath')
+    };
+
+    function setViewBox() { svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }
+    setViewBox();
+
+    function unitsPerPx() {
+      const r = svg.getBoundingClientRect();
+      if (!r.width) return 1;
+      return view.w / r.width;
+    }
+
+    function snapHalfGrid(v) {
+      const h = state.gridSize / 2;
+      return Math.round(v / h) * h;
+    }
+
+    // --- TOOLING ---
+    function setTool(tool) {
+      state.tool = tool;
+      ['line','stop','interchange','text'].forEach(t => {
+        const btn = document.getElementById('tool-' + t);
+        if (!btn) return;
+        if (t === tool) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+      ghosts.stop.style.display = 'none';
+      ghosts.interchange.style.display = 'none';
+    }
+
+    function addStop({x, y, angle, lineId, segId, t}) {
+      // fuerza: solo grid o mitad de grid
+      x = snapHalfGrid(x);
+      y = snapHalfGrid(y);
+
+      elementsData.push({ id: 'el_' + Date.now(), type: 'stop', x, y, angle, lineId, segId, t });
+      renderMap();
+    }
+    
+    // Updated addInterchange to accept object for snapping
+    function addInterchange(params, yInput) {
+      let x, y, lineId, segId, t;
+      
+      // Case 1: Snapped object passed (from hoverInterchange)
+      if (params && typeof params === 'object' && params.logicX !== undefined) {
+         x = params.logicX;
+         y = params.logicY;
+         lineId = params.lineId;
+         segId = params.segId;
+         t = params.t;
+      } 
+      // Case 2: Raw Coordinates passed (x, y)
+      else if (typeof params === 'number' && typeof yInput === 'number') {
+         x = params;
+         y = yInput;
+      } 
+      // Fallback/Safety
+      else {
+          return;
+      }
+
+      elementsData.push({ id: 'el_' + Date.now(), type: 'interchange', x, y, lineId, segId, t });
+      renderMap();
+    }
+    
+    function addText(x, y, content) {
+      elementsData.push({ id: 'el_' + Date.now(), type: 'text', x, y, content });
+      renderMap();
+    }
+
+    // --- LINE MANAGEMENT ---
+    function createNewLine() {
+      const id = 'line_' + Date.now();
+      // Google Material Colors
+      const colors = ['#EA4335', '#4285F4', '#34A853', '#FBBC04', '#AB47BC', '#EC407A', '#5C6BC0', '#26A69A', '#FF7043', '#78909C'];
+      const color = colors[linesData.length % colors.length];
+      linesData.push({ id, name: `Línea ${linesData.length + 1}`, color });
+      renderLinesList();
+      return id;
+    }
+
+    function updateLineColor(id, newColor) {
+      const line = linesData.find(l => l.id === id);
+      if (line) { line.color = newColor; renderLinesList(); renderMap(); }
+    }
+    function updateLineName(id, newName) {
+      const line = linesData.find(l => l.id === id);
+      if (line) line.name = newName;
+    }
+
+    function renderLinesList() {
+      const container = document.getElementById('lines-container');
+      container.innerHTML = '';
+      linesData.forEach(line => {
+        const div = document.createElement('div');
+        div.id = `list-item-${line.id}`;
+        div.className = `line-chip flex items-center p-1 pr-3 gap-2`;
+        div.addEventListener('mouseenter', () => highlightLine(line.id, true));
+        div.addEventListener('mouseleave', () => highlightLine(line.id, false));
+        div.innerHTML = `
+          <div class="relative w-8 h-8 rounded-full shadow-sm overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+            <input type="color" value="${line.color}" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="updateLineColor('${line.id}', this.value)">
+            <div class="w-full h-full border-2 border-white rounded-full box-border" style="background-color: ${line.color}"></div>
+          </div>
+          <input type="text" value="${line.name}" class="bg-transparent border-none text-sm font-medium text-[#3c4043] w-24 focus:outline-none focus:text-[#1a73e8]" onchange="updateLineName('${line.id}', this.value)">
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // --- CORE FUNCTIONS ---
+    function getEdgeKey(x1, y1, x2, y2) {
+      const p1 = `${Math.round(x1)},${Math.round(y1)}`;
+      const p2 = `${Math.round(x2)},${Math.round(y2)}`;
+      return p1 < p2 ? `${p1}_${p2}` : `${p2}_${p1}`;
+    }
+
+    function computeCorridorSideForEdge(ax, ay, bx, by, mx, my) {
+      if (ax === bx && ay === by) return 0;
+      const p1Str = `${Math.round(ax)},${Math.round(ay)}`;
+      const p2Str = `${Math.round(bx)},${Math.round(by)}`;
+      let cx1=ax, cy1=ay, cx2=bx, cy2=by;
+      if (!(p1Str < p2Str)) { cx1=bx; cy1=by; cx2=ax; cy2=ay; }
+      const dx = cx2 - cx1;
+      const dy = cy2 - cy1;
+      const nx = -dy;
+      const ny = dx;
+      const midX = (cx1 + cx2) / 2;
+      const midY = (cy1 + cy2) / 2;
+      const dot = (mx - midX) * nx + (my - midY) * ny;
+      return dot >= 0 ? 1 : -1;
+    }
+
+    function computeVisualSegments(currentSegments) {
+      state.visualSegments = [];
+      const edgeMap = new Map();
+
+      currentSegments.forEach(seg => {
+        const key = getEdgeKey(seg.x1, seg.y1, seg.x2, seg.y2);
+        if (!edgeMap.has(key)) edgeMap.set(key, []);
+        edgeMap.get(key).push(seg);
+      });
+
+      edgeMap.forEach((segsInEdge) => {
+        const refSeg = segsInEdge[0];
+        const p1Str = `${Math.round(refSeg.x1)},${Math.round(refSeg.y1)}`;
+        const p2Str = `${Math.round(refSeg.x2)},${Math.round(refSeg.y2)}`;
+
+        let cx1, cy1, cx2, cy2;
+        if (p1Str < p2Str) { cx1 = refSeg.x1; cy1 = refSeg.y1; cx2 = refSeg.x2; cy2 = refSeg.y2; }
+        else { cx1 = refSeg.x2; cy1 = refSeg.y2; cx2 = refSeg.x1; cy2 = refSeg.y1; }
+
+        const dx = cx2 - cx1;
+        const dy = cy2 - cy1;
+        const len = Math.sqrt(dx*dx + dy*dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+
+        const rankSide = (s) => {
+          const side = (s && typeof s === 'number') ? s : 0;
+          return side < 0 ? 0 : (side > 0 ? 2 : 1);
+        };
+
+        segsInEdge.sort((a, b) => {
+          const ra = rankSide(a.side);
+          const rb = rankSide(b.side);
+          if (ra !== rb) return ra - rb;
+
+          const ca = (typeof a.created === 'number') ? a.created : 0;
+          const cb = (typeof b.created === 'number') ? b.created : 0;
+
+          if (ra === 0) { if (cb !== ca) return cb - ca; }
+          else if (ra === 2) { if (ca !== cb) return ca - cb; }
+          else { if (ca !== cb) return ca - cb; }
+
+          return a.lineId.localeCompare(b.lineId);
+        });
+
+        const count = segsInEdge.length;
+        const strokeWidth = 10;
+        const startOffset = -(count * strokeWidth / 2) + (strokeWidth / 2);
+        const GAP = 8;
+
+        segsInEdge.forEach((seg, index) => {
+          const offset = startOffset + (index * strokeWidth);
+          const ox1 = cx1 + nx * offset;
+          const oy1 = cy1 + ny * offset;
+          const ox2 = cx2 + nx * offset;
+          const oy2 = cy2 + ny * offset;
+
+          const isForward = (Math.round(seg.x1) === Math.round(cx1) && Math.round(seg.y1) === Math.round(cy1));
+          let vrx1, vry1, vrx2, vry2;
+          if (isForward) { vrx1 = ox1; vry1 = oy1; vrx2 = ox2; vry2 = oy2; }
+          else { vrx1 = ox2; vry1 = oy2; vrx2 = ox1; vry2 = oy1; }
+
+          // segment shortened ONLY for drawing the line itself
+          const segmentLen = Math.sqrt((vrx2-vrx1)**2 + (vry2-vry1)**2);
+          let sx1 = vrx1, sy1 = vry1, sx2 = vrx2, sy2 = vry2;
+
+          if (segmentLen > GAP * 2.5) {
+            const dirX = (vrx2 - vrx1) / segmentLen;
+            const dirY = (vry2 - vry1) / segmentLen;
+
+            const getLineDegree = (key, lId) => {
+              return currentSegments.filter(s => s.lineId === lId &&
+                ((Math.round(s.x1)+','+Math.round(s.y1)) === key ||
+                 (Math.round(s.x2)+','+Math.round(s.y2)) === key)
+              ).length;
+            };
+
+            const degStart = getLineDegree(`${Math.round(seg.x1)},${Math.round(seg.y1)}`, seg.lineId);
+            const degEnd   = getLineDegree(`${Math.round(seg.x2)},${Math.round(seg.y2)}`, seg.lineId);
+
+            if (degStart > 1) { sx1 = vrx1 + dirX * GAP; sy1 = vry1 + dirY * GAP; }
+            if (degEnd > 1)   { sx2 = vrx2 - dirX * GAP; sy2 = vry2 - dirY * GAP; }
+          }
+
+          state.visualSegments.push({
+            id: seg.id,
+            lineId: seg.lineId,
+            // shortened (for line render)
+            rx1: sx1, ry1: sy1, rx2: sx2, ry2: sy2,
+            // ORIGINAL (true anchor points on grid / midpoints)
+            origRx1: vrx1, origRy1: vry1, origRx2: vrx2, origRy2: vry2,
+            // logical
+            gx1: seg.x1, gy1: seg.y1, gx2: seg.x2, gy2: seg.y2
+          });
+        });
+      });
+    }
+
+    // --- STOP VISUAL POS: ALWAYS from ORIGINAL endpoints so it lands exactly on grid/midpoints ---
+    function stopVisualPosFromSegId(segId, t) {
+      const vSeg = state.visualSegments.find(v => v.id === segId);
+      if (!vSeg) return null;
+      return {
+        x: vSeg.origRx1 + t * (vSeg.origRx2 - vSeg.origRx1),
+        y: vSeg.origRy1 + t * (vSeg.origRy2 - vSeg.origRy1)
+      };
+    }
+
+    function findStopSegmentByLogical(lineId, x, y, currentSegments) {
+      const eps = 1e-6;
+      for (const s of currentSegments) {
+        if (s.lineId !== lineId) continue;
+        const mx = (s.x1 + s.x2) / 2;
+        const my = (s.y1 + s.y2) / 2;
+
+        if (Math.abs(s.x1 - x) < eps && Math.abs(s.y1 - y) < eps) return { seg: s, t: 0 };
+        if (Math.abs(s.x2 - x) < eps && Math.abs(s.y2 - y) < eps) return { seg: s, t: 1 };
+        if (Math.abs(mx - x) < eps && Math.abs(my - y) < eps) return { seg: s, t: 0.5 };
+      }
+      return null;
+    }
+
+    function findPointOnVisualLineUsingOrig(lineId, logicalX, logicalY, currentSegments) {
+      const lineSegs = currentSegments.filter(s => s.lineId === lineId);
+      let bestSeg = null, minD = Infinity, bestT = 0;
+
+      for (const s of lineSegs) {
+        const dx = s.x2 - s.x1, dy = s.y2 - s.y1;
+        const len2 = dx*dx + dy*dy;
+        if (!len2) continue;
+        let t = ((logicalX - s.x1) * dx + (logicalY - s.y1) * dy) / len2;
+        t = Math.max(0, Math.min(1, t));
+        const px = s.x1 + t*dx;
+        const py = s.y1 + t*dy;
+        const d = Math.hypot(logicalX - px, logicalY - py);
+        if (d < minD) { minD = d; bestSeg = s; bestT = t; }
+      }
+
+      if (bestSeg && minD < 2) {
+        const vSeg = state.visualSegments.find(vs => vs.id === bestSeg.id);
+        if (vSeg) {
+          return {
+            x: vSeg.origRx1 + bestT * (vSeg.origRx2 - vSeg.origRx1),
+            y: vSeg.origRy1 + bestT * (vSeg.origRy2 - vSeg.origRy1)
+          };
+        }
+      }
+      return null;
+    }
+
+    function stopVisualPosForElement(el, currentSegments) {
+      if (typeof el.segId === 'string' && typeof el.t === 'number') {
+        const p = stopVisualPosFromSegId(el.segId, el.t);
+        if (p) return p;
+      }
+
+      const hit = findStopSegmentByLogical(el.lineId, el.x, el.y, currentSegments);
+      if (hit) {
+        const vSeg = state.visualSegments.find(v => v.id === hit.seg.id);
+        if (vSeg) {
+          return {
+            x: vSeg.origRx1 + hit.t * (vSeg.origRx2 - vSeg.origRx1),
+            y: vSeg.origRy1 + hit.t * (vSeg.origRy2 - vSeg.origRy1)
+          };
+        }
+      }
+
+      return findPointOnVisualLineUsingOrig(el.lineId, el.x, el.y, currentSegments);
+    }
+
+    function renderMap(currentSegments = segmentsData) {
+      layers.lines.innerHTML = '';
+      layers.endpoints.innerHTML = '';
+      layers.stops.innerHTML = '';
+      layers.text.innerHTML = '';
+
+      computeVisualSegments(currentSegments);
+
+      linesData.forEach(line => {
+        const lineGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        lineGroup.setAttribute("class", "line-group");
+        lineGroup.dataset.lineId = line.id;
+        lineGroup.addEventListener('mouseenter', () => highlightLine(line.id, true));
+        lineGroup.addEventListener('mouseleave', () => highlightLine(line.id, false));
+        layers.lines.appendChild(lineGroup);
+
+        const lineVSegs = state.visualSegments.filter(vs => vs.lineId === line.id);
+        if (lineVSegs.length === 0) return;
+
+        // line segments (shortened)
+        lineVSegs.forEach(vs => {
+          const el = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          el.setAttribute("x1", vs.rx1); el.setAttribute("y1", vs.ry1);
+          el.setAttribute("x2", vs.rx2); el.setAttribute("y2", vs.ry2);
+          el.setAttribute("stroke", line.color);
+          el.setAttribute("stroke-width", "10");
+          el.setAttribute("class", "metro-line-segment metro-path");
+          lineGroup.appendChild(el);
+        });
+
+        // connectors
+        const nodeMap = new Map();
+        lineVSegs.forEach(vs => {
+          const k1 = `${Math.round(vs.gx1)},${Math.round(vs.gy1)}`;
+          const k2 = `${Math.round(vs.gx2)},${Math.round(vs.gy2)}`;
+          if (!nodeMap.has(k1)) nodeMap.set(k1, []);
+          if (!nodeMap.has(k2)) nodeMap.set(k2, []);
+
+          const l1 = Math.hypot(vs.rx2 - vs.rx1, vs.ry2 - vs.ry1);
+          if (l1 > 0.1) nodeMap.get(k1).push({ x: vs.rx1, y: vs.ry1, vx: (vs.rx2-vs.rx1)/l1, vy: (vs.ry2-vs.ry1)/l1 });
+
+          const l2 = Math.hypot(vs.rx1 - vs.rx2, vs.ry1 - vs.ry2);
+          if (l2 > 0.1) nodeMap.get(k2).push({ x: vs.rx2, y: vs.ry2, vx: (vs.rx1-vs.rx2)/l2, vy: (vs.ry1-vs.ry2)/l2 });
+        });
+
+        nodeMap.forEach(points => {
+          if (points.length > 1) {
+            for (let i=0; i<points.length; i++) {
+              for (let j=i+1; j<points.length; j++) {
+                const p1 = points[i]; const p2 = points[j];
+                const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                const scale = dist * 0.4;
+                const cp1x = p1.x - p1.vx * scale; const cp1y = p1.y - p1.vy * scale;
+                const cp2x = p2.x - p2.vx * scale; const cp2y = p2.y - p2.vy * scale;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", `M${p1.x},${p1.y} C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`);
+                path.setAttribute("stroke", line.color);
+                path.setAttribute("stroke-width", "10");
+                path.setAttribute("fill", "none");
+                path.setAttribute("class", "metro-connector metro-path");
+                lineGroup.appendChild(path);
+              }
+            }
+          }
+        });
+
+        // endpoints
+        const segs = currentSegments.filter(s => s.lineId === line.id);
+        const counts = {};
+        segs.forEach(s => {
+          const p1 = `${Math.round(s.x1)},${Math.round(s.y1)}`;
+          const p2 = `${Math.round(s.x2)},${Math.round(s.y2)}`;
+          counts[p1] = (counts[p1] || 0) + 1;
+          counts[p2] = (counts[p2] || 0) + 1;
+        });
+
+        let endpointFound = false;
+        Object.keys(counts).forEach(k => {
+          if (counts[k] === 1) {
+            endpointFound = true;
+            drawEndpoint(line, k, layers.endpoints, false, null, currentSegments);
+          }
+        });
+
+        if (!endpointFound && segs.length > 0) {
+          const lastSeg = segs[segs.length-1];
+          const k = `${Math.round(lastSeg.x2)},${Math.round(lastSeg.y2)}`;
+          drawEndpoint(line, k, layers.endpoints, true, lastSeg, currentSegments);
+        }
+      });
+
+      // Stops / Interchanges / Text
+      elementsData.forEach(el => {
+        if (el.type === 'stop') {
+          const vPos = stopVisualPosForElement(el, currentSegments);
+          if (vPos) {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            const len = 10;
+            const dx = Math.cos(el.angle) * len;
+            const dy = Math.sin(el.angle) * len;
+            line.setAttribute("x1", vPos.x); line.setAttribute("y1", vPos.y);
+            line.setAttribute("x2", vPos.x + dx); line.setAttribute("y2", vPos.y + dy);
+            const pLine = linesData.find(l => l.id === el.lineId);
+            line.setAttribute("stroke", pLine ? pLine.color : '#000');
+            line.setAttribute("stroke-width", "5");
+            line.setAttribute("stroke-linecap", "round");
+            line.setAttribute("class", "metro-path");
+            line.addEventListener('mouseenter', () => highlightLine(el.lineId, true));
+            line.addEventListener('mouseleave', () => highlightLine(el.lineId, false));
+            layers.stops.appendChild(line);
+          }
+        } else if (el.type === 'interchange') {
+          // Dynamic interchange position logic
+          let cx = el.x, cy = el.y;
+          if (el.lineId) {
+             const vPos = stopVisualPosForElement(el, currentSegments);
+             if (vPos) { cx = vPos.x; cy = vPos.y; }
+          }
+          
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          c.setAttribute("cx", cx); c.setAttribute("cy", cy);
+          c.setAttribute("r", "4"); // Fits within the 10px line width
+          c.setAttribute("fill", "white");
+          // Stroke removed here
+          g.appendChild(c); layers.stops.appendChild(g);
+        } else if (el.type === 'text') {
+          const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          t.setAttribute("x", el.x); t.setAttribute("y", el.y);
+          t.textContent = el.content;
+          t.setAttribute("fill", "#202124");
+          t.setAttribute("font-size", "14px");
+          layers.text.appendChild(t);
+        }
+      });
+    }
+
+    // --- Helpers ---
+    function highlightLine(lineId, active) {
+      const group = document.querySelector(`.line-group[data-line-id="${lineId}"]`);
+      if (group) active ? group.classList.add('highlighted') : group.classList.remove('highlighted');
+      const item = document.getElementById(`list-item-${lineId}`);
+      if (item) { if(active) item.classList.add('active'); else item.classList.remove('active'); }
+    }
+
+    function getSvgPoint(e) {
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    }
+
+    function getMousePos(e) {
+      const p = getSvgPoint(e);
+      const snapX = Math.round(p.x / state.gridSize) * state.gridSize;
+      const snapY = Math.round(p.y / state.gridSize) * state.gridSize;
+      return { x: snapX, y: snapY, rawX: p.x, rawY: p.y };
+    }
+
+    function calculateSnappedEndPoint(x1, y1, x2, y2) {
+      let dx = x2 - x1, dy = y2 - y1;
+      const absDx = Math.abs(dx), absDy = Math.abs(dy);
+      if (absDx === 0 && absDy === 0) return { x: x1, y: y1 };
+      if (absDx > absDy * 2) return { x: x2, y: y1 };
+      else if (absDy > absDx * 2) return { x: x1, y: y2 };
+      else {
+        const dist = Math.round((absDx + absDy) / 2 / state.gridSize) * state.gridSize;
+        const signX = dx >= 0 ? 1 : -1;
+        const signY = dy >= 0 ? 1 : -1;
+        return { x: x1 + (dist * signX), y: y1 + (dist * signY) };
+      }
+    }
+
+    function isValidMove(lineId, fromX, fromY, toX, toY) {
+      const segs = segmentsData.filter(s => s.lineId === lineId);
+      const midX = (fromX + toX) / 2;
+      const midY = (fromY + toY) / 2;
+      const crossing = segs.some(s => {
+        const sMidX = (s.x1 + s.x2) / 2;
+        const sMidY = (s.y1 + s.y2) / 2;
+        return Math.abs(sMidX - midX) < 0.1 && Math.abs(sMidY - midY) < 0.1;
+      });
+      if (crossing) return false;
+
+      const isTargetVisited = segs.some(s =>
+        (Math.round(s.x1)===toX && Math.round(s.y1)===toY) ||
+        (Math.round(s.x2)===toX && Math.round(s.y2)===toY)
+      );
+
+      if (isTargetVisited) {
+        const counts = {};
+        segs.forEach(s => {
+          const p1 = `${Math.round(s.x1)},${Math.round(s.y1)}`;
+          const p2 = `${Math.round(s.x2)},${Math.round(s.y2)}`;
+          counts[p1] = (counts[p1]||0)+1;
+          counts[p2] = (counts[p2]||0)+1;
+        });
+        const key = `${toX},${toY}`;
+        return counts[key] === 1;
+      }
+
+      const counts = {};
+      segs.forEach(s => {
+        const p1 = `${Math.round(s.x1)},${Math.round(s.y1)}`;
+        const p2 = `${Math.round(s.x2)},${Math.round(s.y2)}`;
+        counts[p1] = (counts[p1]||0)+1;
+        counts[p2] = (counts[p2]||0)+1;
+      });
+      const isLoop = Object.values(counts).every(c => c === 2) && segs.length > 0;
+      if (isLoop) return false;
+      return true;
+    }
+
+    function breakIntoSegments(lineId, x1, y1, x2, y2, sideHint, stamp) {
+      const newSegs = [];
+      const dx = x2 - x1, dy = y2 - y1;
+      const stepX = dx === 0 ? 0 : (dx > 0 ? state.gridSize : -state.gridSize);
+      const stepY = dy === 0 ? 0 : (dy > 0 ? state.gridSize : -state.gridSize);
+      const steps = Math.max(Math.abs(dx), Math.abs(dy)) / state.gridSize;
+      const stepsInt = Math.round(steps);
+      let currX = x1, currY = y1;
+
+      for (let i=0; i<stepsInt; i++) {
+        const nextX = currX + stepX;
+        const nextY = currY + stepY;
+        newSegs.push({
+          id: 'seg_' + stamp + '_' + i,
+          lineId,
+          x1: currX, y1: currY, x2: nextX, y2: nextY,
+          side: sideHint,
+          created: stamp
+        });
+        currX = nextX; currY = nextY;
+      }
+      return newSegs;
+    }
+
+    // --- STOP SNAP (FIX): candidates on ORIGINAL endpoints/midpoint ONLY ---
+    // UPDATED: Added Side detection logic and Increased threshold
+    function findStopSnap(mx, my) {
+      const threshold = 45 * unitsPerPx(); // Increased threshold to avoid disappearing dots
+      let closest = null;
+      let minDst = Infinity;
+
+      for (const vSeg of state.visualSegments) {
+        const dxV = vSeg.origRx2 - vSeg.origRx1;
+        const dyV = vSeg.origRy2 - vSeg.origRy1;
+
+        const candidates = [0, 0.5, 1];
+
+        for (const t of candidates) {
+          const px = vSeg.origRx1 + t * dxV;
+          const py = vSeg.origRy1 + t * dyV;
+          const dst = Math.hypot(mx - px, my - py);
+
+          if (dst < threshold && dst < minDst) {
+            minDst = dst;
+
+            const lx = snapHalfGrid(vSeg.gx1 + t * (vSeg.gx2 - vSeg.gx1));
+            const ly = snapHalfGrid(vSeg.gy1 + t * (vSeg.gy2 - vSeg.gy1));
+
+            const ldx = (vSeg.gx2 - vSeg.gx1);
+            const ldy = (vSeg.gy2 - vSeg.gy1);
+            
+            // Side Logic: Calculate two possible angles (perpendicular Left/Right)
+            // and see which projected point is closer to the mouse cursor
+            const baseAng = Math.atan2(ldy, ldx) + Math.PI / 2;
+            const invertedAng = baseAng + Math.PI;
+
+            // Project a "look ahead" point for both angles
+            const lookDist = 20 * unitsPerPx();
+            const p1x = px + Math.cos(baseAng) * lookDist;
+            const p1y = py + Math.sin(baseAng) * lookDist;
+            const p2x = px + Math.cos(invertedAng) * lookDist;
+            const p2y = py + Math.sin(invertedAng) * lookDist;
+
+            const d1 = (mx - p1x)**2 + (my - p1y)**2;
+            const d2 = (mx - p2x)**2 + (my - p2y)**2;
+
+            const finalAng = d1 < d2 ? baseAng : invertedAng;
+
+            closest = {
+              visualX: px, visualY: py,
+              logicX: lx, logicY: ly,
+              angle: finalAng,
+              lineId: vSeg.lineId,
+              segId: vSeg.id,
+              t
+            };
+          }
+        }
+      }
+
+      return closest;
+    }
+
+    // --- Endpoints drawing ---
+    function getVisualPointForLine(lineId, gx, gy) {
+      const vSegs = state.visualSegments.filter(s => s.lineId === lineId);
+      for (let vs of vSegs) {
+        if (Math.abs(vs.gx1 - gx) < 1 && Math.abs(vs.gy1 - gy) < 1) return {x: vs.origRx1, y: vs.origRy1};
+        if (Math.abs(vs.gx2 - gx) < 1 && Math.abs(vs.gy2 - gy) < 1) return {x: vs.origRx2, y: vs.origRy2};
+      }
+      return null;
+    }
+
+    function drawEndpoint(line, keyCoord, container, isLoopHandle = false, specificSeg = null, currentSegments = segmentsData) {
+      const [gx, gy] = keyCoord.split(',').map(Number);
+      let vPos;
+
+      if (specificSeg) {
+        const vSeg = state.visualSegments.find(vs => vs.id === specificSeg.id);
+        if (vSeg) {
+          if (Math.abs(specificSeg.x1 - gx) < 1 && Math.abs(specificSeg.y1 - gy) < 1) vPos = {x: vSeg.origRx1, y: vSeg.origRy1};
+          else vPos = {x: vSeg.origRx2, y: vSeg.origRy2};
+        }
+      }
+      if (!vPos) vPos = getVisualPointForLine(line.id, gx, gy);
+      if (!vPos) return;
+
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.setAttribute("class", "line-endpoint-group");
+
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      hit.setAttribute("cx", vPos.x); hit.setAttribute("cy", vPos.y);
+      hit.setAttribute("r", "15"); hit.setAttribute("fill", "#ffffff"); hit.setAttribute("fill-opacity", "0");
+      group.appendChild(hit);
+
+      if (isLoopHandle) {
+        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        c.setAttribute("cx", vPos.x); c.setAttribute("cy", vPos.y);
+        c.setAttribute("r", "6");
+        c.setAttribute("stroke", line.color); c.setAttribute("stroke-width", "4");
+        c.setAttribute("fill", "#fff");
+        group.appendChild(c);
+      } else {
+        const segs = currentSegments.filter(s => s.lineId === line.id);
+        const seg = specificSeg || segs.find(s =>
+          (Math.round(s.x1) === gx && Math.round(s.y1) === gy) ||
+          (Math.round(s.x2) === gx && Math.round(s.y2) === gy)
+        );
+        if (seg) {
+          let dx, dy;
+          if (Math.round(seg.x1) === gx && Math.round(seg.y1) === gy) { dx = seg.x1 - seg.x2; dy = seg.y1 - seg.y2; }
+          else { dx = seg.x2 - seg.x1; dy = seg.y2 - seg.y1; }
+
+          const angle = Math.atan2(dy, dx);
+          const perp = angle + Math.PI / 2;
+          const len = 10;
+
+          const tbar = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          tbar.setAttribute("x1", vPos.x + Math.cos(perp)*len); tbar.setAttribute("y1", vPos.y + Math.sin(perp)*len);
+          tbar.setAttribute("x2", vPos.x - Math.cos(perp)*len); tbar.setAttribute("y2", vPos.y - Math.sin(perp)*len);
+          tbar.setAttribute("stroke", line.color);
+          tbar.setAttribute("stroke-width", "10");
+          tbar.setAttribute("stroke-linecap", "round");
+          tbar.setAttribute("class", "line-endpoint-visual");
+          group.appendChild(tbar);
+        }
+      }
+
+      group.addEventListener('mousedown', (e) => onEndpointMouseDown(e, line.id, gx, gy));
+      group.addEventListener('mouseenter', () => { if(!state.isDrawing) highlightLine(line.id, true); });
+      group.addEventListener('mouseleave', () => { if(!state.isDrawing) highlightLine(line.id, false); });
+      container.appendChild(group);
+    }
+
+    // --- ZOOM (WHEEL) ---
+    svg.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const mouse = getSvgPoint(e);
+
+      const factor = Math.pow(1.0015, e.deltaY);
+      const targetW = view.w * factor;
+
+      const minW = MAP_W / view.maxZoom;
+      const maxW = MAP_W / view.minZoom;
+
+      const newW = Math.max(minW, Math.min(maxW, targetW));
+      const newH = (newW * MAP_H) / MAP_W;
+
+      const rx = (mouse.x - view.x) / view.w;
+      const ry = (mouse.y - view.y) / view.h;
+
+      let newX = mouse.x - rx * newW;
+      let newY = mouse.y - ry * newH;
+
+      if (newW >= MAP_W) newX = (MAP_W - newW) / 2;
+      else newX = Math.max(0, Math.min(MAP_W - newW, newX));
+
+      if (newH >= MAP_H) newY = (MAP_H - newH) / 2;
+      else newY = Math.max(0, Math.min(MAP_H - newH, newY));
+
+      view.x = newX; view.y = newY; view.w = newW; view.h = newH;
+      setViewBox();
+    }, { passive: false });
+
+    // --- PAN (middle OR Space+drag) ---
+    function startPan(e) {
+      state.isPanning = true;
+      state.panStartSvg = getSvgPoint(e);
+      state.panStartView = { x: view.x, y: view.y };
+      svg.style.cursor = 'grabbing';
+    }
+    function updatePan(e) {
+      const p = getSvgPoint(e);
+      const dx = p.x - state.panStartSvg.x;
+      const dy = p.y - state.panStartSvg.y;
+
+      let newX = state.panStartView.x - dx;
+      let newY = state.panStartView.y - dy;
+
+      if (view.w >= MAP_W) newX = (MAP_W - view.w) / 2;
+      else newX = Math.max(0, Math.min(MAP_W - view.w, newX));
+
+      if (view.h >= MAP_H) newY = (MAP_H - view.h) / 2;
+      else newY = Math.max(0, Math.min(MAP_H - view.h, newY));
+
+      view.x = newX; view.y = newY;
+      setViewBox();
+    }
+    function stopPan() {
+      state.isPanning = false;
+      state.panStartSvg = null;
+      state.panStartView = null;
+      svg.style.cursor = 'crosshair';
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') { state.spaceDown = true; e.preventDefault(); }
+    }, { passive: false });
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space') state.spaceDown = false; });
+
+    svg.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); });
+
+    // --- INTERACTION ---
+    function onEndpointMouseDown(e, lineId, gx, gy) {
+      if (e.button === 1 || (state.spaceDown && e.button === 0)) { e.preventDefault(); startPan(e); return; }
+      e.stopPropagation(); e.preventDefault();
+      state.drawingLineId = lineId;
+      state.startPos = {x: gx, y: gy};
+      state.isDrawing = true;
+      state.drawStamp = Date.now();
+      state.drawSide = 0;
+      document.querySelectorAll('.highlighted').forEach(el => el.classList.remove('highlighted'));
+    }
+
+    svg.addEventListener('mousedown', (e) => {
+      if (!document.getElementById('textModal').classList.contains('hidden')) return;
+
+      if (e.button === 1 || (state.spaceDown && e.button === 0)) { e.preventDefault(); startPan(e); return; }
+      if (e.button !== 0) return;
+
+      const pos = getMousePos(e);
+      const hitThreshold = 15; // Detection radius in pixels
+
+      if (state.tool === 'line') {
+        state.drawingLineId = createNewLine();
+        state.startPos = {x: pos.x, y: pos.y};
+        state.isDrawing = true;
+        state.drawStamp = Date.now();
+        state.drawSide = 0;
+      } 
+      else if (state.tool === 'stop') {
+        // Check for deletion first
+        const hitIndex = elementsData.findIndex(el => {
+          if (el.type !== 'stop') return false;
+          const vPos = stopVisualPosForElement(el, segmentsData);
+          if (!vPos) return false;
+          return Math.hypot(vPos.x - pos.rawX, vPos.y - pos.rawY) < hitThreshold;
+        });
+
+        if (hitIndex !== -1) {
+          elementsData.splice(hitIndex, 1);
+          renderMap();
+        } else if (state.hoverStop) {
+          addStop({
+            x: state.hoverStop.logicX,
+            y: state.hoverStop.logicY,
+            angle: state.hoverStop.angle,
+            lineId: state.hoverStop.lineId,
+            segId: state.hoverStop.segId,
+            t: state.hoverStop.t
+          });
+        }
+      } 
+      else if (state.tool === 'interchange') {
+        // Check for deletion first
+        const hitIndex = elementsData.findIndex(el => {
+          if (el.type !== 'interchange') return false;
+          let cx = el.x, cy = el.y;
+          if (el.lineId) {
+             const vPos = stopVisualPosForElement(el, segmentsData);
+             if (vPos) { cx = vPos.x; cy = vPos.y; }
+          }
+          return Math.hypot(cx - pos.rawX, cy - pos.rawY) < hitThreshold;
+        });
+
+        if (hitIndex !== -1) {
+          elementsData.splice(hitIndex, 1);
+          renderMap();
+        } else {
+           if (state.hoverInterchange) {
+              addInterchange(state.hoverInterchange);
+           } else {
+              addInterchange(pos.x, pos.y);
+           }
+        }
+      } 
+      else if (state.tool === 'text') {
+        // Check for deletion first
+        const hitIndex = elementsData.findIndex(el => {
+          if (el.type !== 'text') return false;
+          // Text hit detection approx (circle around anchor)
+          return Math.hypot(el.x - pos.rawX, el.y - pos.rawY) < 20; 
+        });
+
+        if (hitIndex !== -1) {
+          elementsData.splice(hitIndex, 1);
+          renderMap();
+        } else {
+          state.textPos = pos;
+          openTextModal();
+        }
+      }
+    });
+
+    svg.addEventListener('mousemove', (e) => {
+      if (state.isPanning) { e.preventDefault(); updatePan(e); return; }
+
+      const pos = getMousePos(e);
+
+      if (state.tool === 'line' && state.isDrawing) {
+        const end = calculateSnappedEndPoint(state.startPos.x, state.startPos.y, pos.x, pos.y);
+
+        state.drawSide = computeCorridorSideForEdge(
+          state.startPos.x, state.startPos.y,
+          end.x, end.y,
+          pos.rawX, pos.rawY
+        );
+
+        if (end.x !== state.lastRenderedEnd.x || end.y !== state.lastRenderedEnd.y) {
+          state.lastRenderedEnd = end;
+
+          const pieces = breakIntoSegments(
+            state.drawingLineId,
+            state.startPos.x, state.startPos.y,
+            end.x, end.y,
+            state.drawSide || 1,
+            state.drawStamp
+          );
+
+          let previewSegments = [...segmentsData];
+          pieces.forEach(p => {
+            const existingIdx = previewSegments.findIndex(s =>
+              s.lineId === state.drawingLineId &&
+              ((s.x1 === p.x1 && s.y1 === p.y1 && s.x2 === p.x2 && s.y2 === p.y2) ||
+               (s.x1 === p.x2 && s.y1 === p.y2 && s.x2 === p.x1 && s.y2 === p.y1))
+            );
+            if (existingIdx >= 0) previewSegments.splice(existingIdx, 1);
+            else {
+              if (isValidMove(state.drawingLineId, p.x1, p.y1, p.x2, p.y2)) previewSegments.push(p);
+            }
+          });
+
+          renderMap(previewSegments);
+        }
+      } else if (state.tool === 'stop') {
+        const smart = findStopSnap(pos.rawX, pos.rawY);
+        if (smart) {
+          state.hoverStop = smart;
+
+          const len = 10;
+          const dx = Math.cos(smart.angle) * len;
+          const dy = Math.sin(smart.angle) * len;
+
+          ghosts.stop.setAttribute('x1', smart.visualX);
+          ghosts.stop.setAttribute('y1', smart.visualY);
+          ghosts.stop.setAttribute('x2', smart.visualX + dx);
+          ghosts.stop.setAttribute('y2', smart.visualY + dy);
+          ghosts.stop.style.display = 'block';
+        } else {
+          state.hoverStop = null;
+          ghosts.stop.style.display = 'none';
+        }
+      } else if (state.tool === 'interchange') {
+         const smart = findStopSnap(pos.rawX, pos.rawY);
+         if (smart) {
+           state.hoverInterchange = smart;
+           ghosts.interchange.setAttribute('cx', smart.visualX);
+           ghosts.interchange.setAttribute('cy', smart.visualY);
+           ghosts.interchange.style.display = 'block';
+         } else {
+           state.hoverInterchange = null;
+           ghosts.interchange.style.display = 'none';
+         }
+      }
+    });
+
+    svg.addEventListener('mouseup', (e) => {
+      if (state.isPanning) { stopPan(); return; }
+
+      if (state.tool === 'line' && state.isDrawing) {
+        state.isDrawing = false;
+        const pos = getMousePos(e);
+        const end = calculateSnappedEndPoint(state.startPos.x, state.startPos.y, pos.x, pos.y);
+
+        if (state.startPos.x !== end.x || state.startPos.y !== end.y) {
+          const sideFinal = state.drawSide || computeCorridorSideForEdge(
+            state.startPos.x, state.startPos.y, end.x, end.y, pos.rawX, pos.rawY
+          ) || 1;
+
+          const pieces = breakIntoSegments(
+            state.drawingLineId,
+            state.startPos.x, state.startPos.y,
+            end.x, end.y,
+            sideFinal,
+            state.drawStamp
+          );
+
+          pieces.forEach(p => {
+            const existingIdx = segmentsData.findIndex(s =>
+              s.lineId === state.drawingLineId &&
+              ((s.x1 === p.x1 && s.y1 === p.y1 && s.x2 === p.x2 && s.y2 === p.y2) ||
+               (s.x1 === p.x2 && s.y1 === p.y2 && s.x2 === p.x1 && s.y2 === p.y1))
+            );
+
+            if (existingIdx >= 0) segmentsData.splice(existingIdx, 1);
+            else {
+              if (isValidMove(state.drawingLineId, p.x1, p.y1, p.x2, p.y2)) segmentsData.push(p);
+            }
+          });
+        }
+
+        renderMap();
+
+        if (state.drawingLineId) {
+          const hasSegs = segmentsData.some(s => s.lineId === state.drawingLineId);
+          if (!hasSegs) {
+            linesData = linesData.filter(l => l.id !== state.drawingLineId);
+            renderLinesList();
+          }
+        }
+
+        state.drawingLineId = null;
+        state.lastRenderedEnd = {x:0, y:0};
+        state.drawSide = 0;
+      }
+    });
+
+    window.addEventListener('mouseup', () => { if (state.isPanning) stopPan(); });
+
+    // --- MODAL TEXTO ---
+    const modal = document.getElementById('textModal');
+    const input = document.getElementById('stationNameInput');
+    function openTextModal() { modal.classList.remove('hidden'); input.value=''; input.focus(); }
+    function closeModal() { modal.classList.add('hidden'); }
+    function confirmText() {
+      if (input.value.trim() && state.textPos) addText(state.textPos.x, state.textPos.y, input.value.trim());
+      closeModal();
+    }
+    input.addEventListener('keydown', e => { if(e.key === 'Enter') confirmText(); if(e.key === 'Escape') closeModal(); });
+
+    // --- EXPORT/IMPORT ---
+    function exportSVG() {
+      const clone = svg.cloneNode(true);
+      const savedState = { linesData, segmentsData, elementsData };
+      clone.setAttribute('data-metro-state', JSON.stringify(savedState));
+
+      const serializer = new XMLSerializer();
+      let source = serializer.serializeToString(clone);
+      if (!source.match(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+        source = source.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+
+      const blob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'metro-map.svg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function importSVG(inputEl) {
+      const file = inputEl.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(e.target.result, "image/svg+xml");
+        const svgEl = doc.querySelector('svg');
+        if (svgEl && svgEl.hasAttribute('data-metro-state')) {
+          try {
+            const savedState = JSON.parse(svgEl.getAttribute('data-metro-state'));
+            linesData = savedState.linesData || [];
+            segmentsData = savedState.segmentsData || [];
+            elementsData = savedState.elementsData || [];
+            renderLinesList();
+            renderMap();
+          } catch (err) { alert("Error al leer datos."); }
+        } else {
+          alert("SVG no compatible.");
+        }
+      };
+      reader.readAsText(file);
+      inputEl.value = '';
+    }
+
+    function init() { renderLinesList(); renderMap(); }
+    init();
+  </script>
+</body>
+</html>
