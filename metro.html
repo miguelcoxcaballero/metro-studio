@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Metro Studio Lite</title>
+<title>Metro Studio</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
@@ -32,13 +32,13 @@
   
   #app-svg.panning { cursor: grabbing; }
 
-  /* Grupo de Línea para Hover Sincronizado */
+  /* Line Group for Synchronized Hover */
   .line-group {
     pointer-events: stroke;
     cursor: pointer;
   }
   
-  /* Engrosamiento sincronizado al hacer hover sobre el grupo */
+  /* Synchronized thickening on group hover */
   .line-group:hover .path, 
   .line-group:hover .line-tbar { 
     stroke-width: 14px !important; 
@@ -51,7 +51,7 @@
     transition: opacity 0.3s ease, stroke-width 0.2s ease;
   }
   
-  /* Clases de estado para la línea */
+  /* State classes for the line */
   .path.editing-focus, .line-tbar.editing-focus { stroke-width: 12px !important; filter: drop-shadow(0 0 4px rgba(0,0,0,0.1)); }
   .path.dimmed, .line-tbar.dimmed { opacity: 0.15 !important; }
 
@@ -62,7 +62,7 @@
     filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
   }
 
-  /* Estaciones */
+  /* Stations */
   .stop-shape{
     fill:#ffffff;
     stroke:#3c4043;
@@ -85,7 +85,7 @@
     pointer-events: none;
   }
 
-  /* Outline para stops estilo 3 huerfanos */
+  /* Outline for orphan style 3 stops */
   .stop-orphan-dot {
     fill: none;
     stroke: var(--ink);
@@ -93,7 +93,7 @@
     pointer-events: none;
   }
 
-  /* Anillo de Resaltado y Guía */
+  /* Highlight Ring and Guide */
   .stop-ring{
     fill:none;
     stroke: var(--lc);
@@ -107,7 +107,7 @@
     stroke: var(--accent);
   }
 
-  /* Guía visual: desaparece al hacer hover (ratón encima) */
+  /* Visual guide: disappears on hover */
   .stop.in-edited-line:not(.hover) .stop-ring {
     opacity: 0.35;
     stroke-width: 10;
@@ -137,6 +137,12 @@
     100%{ transform:scale(1); }
   }
 
+  @keyframes selectPulse {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); border-color: rgba(59, 130, 246, 0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); border-color: rgba(59, 130, 246, 1); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); border-color: rgba(59, 130, 246, 0.5); }
+  }
+
   .handle{ 
     cursor: grab; 
     transition: transform 0.2s;
@@ -147,6 +153,10 @@
     background: rgba(255,255,255,0.9) !important;
     backdrop-filter: blur(12px);
     border: 1px solid rgba(0,0,0,0.05);
+  }
+
+  .line-card.active, .line-card.interact {
+    animation: selectPulse 2s infinite;
   }
 
   #stop-popup {
@@ -234,38 +244,44 @@
 <body>
   <header class="absolute top-6 left-6 right-6 h-16 rounded-2xl flex items-center justify-between px-8 shadow-sm z-50">
     <div class="flex items-center gap-3 text-gray-900 font-bold tracking-tight">
-      <div class="p-2 bg-blue-600 rounded-lg text-white shadow-blue-200 shadow-lg">
-        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.52 2 12 2zm0 18c-4.4 0-8-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm-5.5-2.5l7.5-3.2-7.5-3.2V17.5z"/></svg>
+      <div class="p-1 text-blue-600 flex items-center justify-center">
+        <!-- New Train Icon (Blue, no background) -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 146.85 146.57" class="w-10 h-10">
+          <path fill="currentColor" d="M 49.107143,133.17765 L 26.964286,133.17765 L 45,118.44551 L 35,118.50614 C 35,118.50614 32,117.57051 30,115.57051 C 28,113.57051 27,109.10591 27,109.10591 L 27,29.570511 C 27,29.570511 26.642857,28.041576 29.642857,24.570511 C 32.642857,21.099446 36,21.570511 36,21.570511 L 55,21.570511 C 55,21.570511 55,18.570511 57,16.570511 C 59,14.570511 62,14.973159 62,14.973159 L 88,14.973159 C 88,14.973159 91.160476,15.25284 92.714286,17.302654 C 94.280187,19.368419 93.990115,21.63516 93.990115,21.63516 L 113.03571,21.731225 C 113.03571,21.731225 117.28571,21.01694 119.55357,25.106225 C 121.72253,29.017186 121,31.570511 121,31.570511 L 121,109.10591 C 121,109.10591 121.375,114.08837 119.375,116.08837 C 117.375,118.08837 112.01786,118.55265 112.01786,118.55265 L 103.80357,118.55265 L 121,133.64194 L 100.08929,133.74908 L 89.928571,118.64194 L 57.017857,118.6598 L 49.107143,133.17765 Z"/>
+          <rect x="38.407105" y="32.570511" width="71.592895" height="34" rx="4" ry="4" fill="#FFFFFF"/>
+          <rect x="40" y="83.570511" width="16.432526" height="13.165013" rx="4" ry="4" fill="#FFFFFF"/>
+          <rect x="93.067474" y="83.070511" width="16.432526" height="13.165013" rx="4" ry="4" fill="#FFFFFF"/>
+        </svg>
       </div>
-      Metro Studio Lite
+      Metro Studio
     </div>
     <div class="flex gap-3">
-      <button onclick="$('inp').click()" class="px-5 py-2.5 hover:bg-gray-100 rounded-xl text-sm font-bold text-gray-600 transition-all">Importar</button>
+      <button onclick="$('inp').click()" class="px-5 py-2.5 hover:bg-gray-100 rounded-xl text-sm font-bold text-gray-600 transition-all">Import</button>
       <input id="inp" type="file" hidden onchange="io.import(this)">
-      <button onclick="io.export()" class="px-6 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl text-sm font-bold shadow-lg transition-all">Exportar Proyecto</button>
+      <button onclick="io.export()" class="px-6 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl text-sm font-bold shadow-lg transition-all">Export Project</button>
     </div>
   </header>
 
   <div id="ui-panel" class="absolute bottom-8 left-8 w-72 max-h-[45vh] overflow-y-auto rounded-2xl p-3 shadow-2xl z-40 flex flex-col-reverse gap-3 empty:hidden"></div>
 
   <div id="stop-popup">
-    <div class="popup-section-title">Nombre de la Estación</div>
-    <input type="text" id="popup-stop-name" placeholder="Ej: Sol, Atocha..." spellcheck="false" oninput="app.updateStopName(this.value)">
+    <div class="popup-section-title">Station Name</div>
+    <input type="text" id="popup-stop-name" placeholder="E.g. Central Station..." spellcheck="false" oninput="app.updateStopName(this.value)">
     
-    <div class="popup-section-title">Estilo Visual</div>
+    <div class="popup-section-title">Visual Style</div>
     <div class="selector-grid">
-      <div class="opt-btn style-opt" onclick="app.updateStopStyle('standard', this)" title="Estándar">
+      <div class="opt-btn style-opt" onclick="app.updateStopStyle('standard', this)" title="Standard">
         <div class="w-4 h-4 rounded-full border-2 border-current"></div>
       </div>
-      <div class="opt-btn style-opt" onclick="app.updateStopStyle('side-square', this)" title="Lateral">
+      <div class="opt-btn style-opt" onclick="app.updateStopStyle('side-square', this)" title="Side">
         <div class="w-4 h-4 border-2 border-current"></div>
       </div>
-      <div class="opt-btn style-opt" onclick="app.updateStopStyle('inline-dot', this)" title="Integrado">
+      <div class="opt-btn style-opt" onclick="app.updateStopStyle('inline-dot', this)" title="Inline">
         <div class="w-2 h-2 rounded-full bg-current"></div>
       </div>
     </div>
 
-    <div class="popup-section-title">Tipografía</div>
+    <div class="popup-section-title">Typography</div>
     <div class="selector-grid">
       <div class="opt-btn font-opt" style="font-family: sans-serif;" onclick="app.updateStopFont('sans-serif', this)">A</div>
       <div class="opt-btn font-opt" style="font-family: serif;" onclick="app.updateStopFont('serif', this)">A</div>
@@ -276,11 +292,11 @@
 
     <button class="popup-btn danger" onclick="app.deleteCurrentStop()">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-      Eliminar del Mapa
+      Delete Station
     </button>
 
     <div class="mt-4 pt-4 border-t border-gray-100">
-      <div class="popup-section-title">Líneas en esta parada</div>
+      <div class="popup-section-title">Lines at this station</div>
       <div id="popup-stop-lines" class="flex flex-wrap gap-2 px-1"></div>
     </div>
   </div>
@@ -304,7 +320,7 @@
   </svg>
 
 <script>
-/* ========= CONFIGURACIÓN ========= */
+/* ========= CONFIGURATION ========= */
 const GRID = 40;
 const LINE_WIDTH = 10;
 const LINE_SPACING = 12;
@@ -332,7 +348,7 @@ const gesture = {
   touchedStops: new Set() 
 };
 
-/* ========= UTILIDADES ========= */
+/* ========= UTILS ========= */
 const $ = id => document.getElementById(id);
 const attr = (el, a) => { for (const k in a) el.setAttribute(k, a[k]); };
 const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
@@ -395,7 +411,7 @@ function setViewOnWheel(e){
   view.w = nw; setView();
 }
 
-/* ========= GEOMETRÍA DE RUTAS ========= */
+/* ========= GEOMETRY ========= */
 function calculateRoute(p1, p2, influencePt){
   const A = { x: p1.x, y: p1.y }, B = { x: p2.x, y: p2.y };
   const dx = B.x - A.x, dy = B.y - A.y;
@@ -441,7 +457,7 @@ function densifyRoute(routePts){
   return out;
 }
 
-/* ========= CHUNKS Y CORREDORES ========= */
+/* ========= CHUNKS AND CORRIDORS ========= */
 function chunkKey(p, q){
   const ax = p.x, ay = p.y, bx = q.x, by = q.y;
   if (ax < bx || (ax === bx && ay <= by)) return `${ax},${ay}|${bx},${by}`;
@@ -528,39 +544,55 @@ function minDistToStopVisual(pos, s, corridorsObj){
 }
 
 function toggleStopOnLine(lineObj, sid, anchorA, anchorB, mousePos){
-  const nodes = lineObj.nodes, idx = nodes.indexOf(sid);
+  const nodes = lineObj.nodes;
+  const idx = nodes.indexOf(sid);
+
   if(idx !== -1){
-    // REMOCIÓN (Veteado)
+    // REMOVAL (Veteado)
+    // Keep safety check from provided snippet if desired, but user wants full revert
+    // The snippet: if(nodes.length <= 2) return { a: anchorA, b: anchorB };
+    if(nodes.length <= 2) return { a: anchorA, b: anchorB };
+
     const prev = nodes[idx-1], next = nodes[idx+1];
     lineObj.nodes = nodes.filter(x => x !== sid);
-    if(lineObj.bends) { 
+    
+    if(lineObj.bends) {
       if (prev && sid) delete lineObj.bends[[prev, sid].sort().join('-')];
       if (sid && next) delete lineObj.bends[[sid, next].sort().join('-')];
     }
-    return { a: (sid === anchorA) ? (prev || nodes[0]) : anchorA, b: (sid === anchorB) ? (next || nodes[nodes.length-1]) : anchorB, changed: true };
+
+    let newA = (sid === anchorA) ? (prev || next) : anchorA;
+    let newB = (sid === anchorB) ? (next || prev) : anchorB;
+    
+    return { a: newA, b: newB };
   } else {
-    // INSERCIÓN
+    // INSERTION
     let aIdx = nodes.indexOf(anchorA), bIdx = nodes.indexOf(anchorB);
-    if(aIdx === -1 || bIdx === -1) { const hit = findNearestLinkOnLine(lineObj.id, mousePos); aIdx = hit.i; bIdx = hit.i + 1; anchorA = nodes[aIdx]; anchorB = nodes[bIdx]; }
+    if(aIdx === -1 || bIdx === -1) { 
+        const hit = findNearestLinkOnLine(lineObj.id, mousePos); 
+        aIdx = hit.i; bIdx = hit.i + 1; 
+        anchorA = nodes[aIdx]; anchorB = nodes[bIdx]; 
+    }
     const insertPos = Math.max(aIdx, bIdx);
     nodes.splice(insertPos, 0, sid);
-    const distA = dist(mousePos, stopById(anchorA)), distB = dist(mousePos, stopById(anchorB));
-    return (distA < distB) ? { a: anchorA, b: sid, changed: true } : { a: sid, b: anchorB, changed: true };
+    
+    const distA = dist(mousePos, stopById(anchorA));
+    const distB = dist(mousePos, stopById(anchorB));
+    
+    if(distA < distB) return { a: anchorA, b: sid };
+    return { a: sid, b: anchorB };
   }
 }
 
 function cleanUpLine(l){
   if(!l || !l.nodes) return;
-  // Dedup consecutive
   for(let i=l.nodes.length-1; i>0; i--){
     if(l.nodes[i] === l.nodes[i-1]) l.nodes.splice(i, 1);
   }
-  // Ensure min length
   if(l.nodes.length < 2) {
     lines = lines.filter(line => line.id !== l.id);
     return;
   }
-  // Clean orphans bends
   if(l.bends){
     const valid = new Set();
     for(let i=0; i<l.nodes.length-1; i++){
@@ -657,24 +689,19 @@ function findNearestLinkOnLine(lid, pos){
   return { i: nodeIdx, d: best.d };
 }
 
-// Nueva función global para calcular extensiones
 function getLinePathWithExtensions(l, corridorsObj) {
     const pts = buildLinePath(l, l.nodes, corridorsObj);
     if (pts.length < 2) return null;
-
     const startVec = { x: pts[0].x - pts[1].x, y: pts[0].y - pts[1].y };
     const startLen = Math.hypot(startVec.x, startVec.y) || 1;
     const startDir = { x: startVec.x/startLen, y: startVec.y/startLen };
-
     const endIdx = pts.length - 1;
     const endVec = { x: pts[endIdx].x - pts[endIdx-1].x, y: pts[endIdx].y - pts[endIdx-1].y };
     const endLen = Math.hypot(endVec.x, endVec.y) || 1;
     const endDir = { x: endVec.x/endLen, y: endVec.y/endLen };
-
-    const extLen = GRID * 0.7; // AJUSTADO A 0.7
+    const extLen = GRID * 0.7; 
     const pStartExt = { x: pts[0].x + startDir.x * extLen, y: pts[0].y + startDir.y * extLen };
     const pEndExt = { x: pts[endIdx].x + endDir.x * extLen, y: pts[endIdx].y + endDir.y * extLen };
-
     return { pts, pStartExt, pEndExt, startDir, endDir };
 }
 
@@ -687,18 +714,24 @@ const app = {
     const s = stopById(sid); if(!s) return; appState.popupStopId = sid; const p = $('stop-popup'); p.style.display = 'block';
     $('popup-stop-name').value = s.name || ""; document.querySelectorAll('.font-opt, .style-opt').forEach(o => o.classList.remove('active'));
     const font = s.font || 'sans-serif', style = s.style || 'standard';
-    document.querySelector(`.style-opt[title="${style==='standard'?'Estándar':style==='side-square'?'Lateral':'Integrado'}"]`)?.classList.add('active');
+    document.querySelector(`.style-opt[title="${style==='standard'?'Standard':style==='side-square'?'Side':'Inline'}"]`)?.classList.add('active');
     const stopLines = lines.filter(l => l.nodes.includes(sid));
-    $('popup-stop-lines').innerHTML = stopLines.length ? stopLines.map(l => `<span class="line-tag shadow-sm" style="background:${l.color}"></span>`).join('') : '<span class="text-[10px] text-gray-400">Sin líneas</span>';
+    $('popup-stop-lines').innerHTML = stopLines.length ? stopLines.map(l => `<span class="line-tag shadow-sm" style="background:${l.color}"></span>`).join('') : '<span class="text-[10px] text-gray-400">No lines</span>';
     const px = Math.min(sx + 15, window.innerWidth - 260), py = Math.min(sy + 15, window.innerHeight - 350); p.style.left = px + 'px'; p.style.top = py + 'px';
   },
   hideStopPopup() { $('stop-popup').style.display = 'none'; appState.popupStopId = null; },
   deleteCurrentStop() { if(appState.popupStopId){ const id = appState.popupStopId; lines.forEach(l => l.nodes = l.nodes.filter(n => n !== id)); lines = lines.filter(l => l.nodes.length >= 2); stops = stops.filter(st => st.id !== id); this.hideStopPopup(); render.refresh(); } },
   
-  selectLine(id) {
+  selectLine(id, focusInput = false) {
     appState.selectedLineId = id;
     render.drawMap();
     render.drawUI();
+    if (focusInput) {
+        setTimeout(() => {
+            const input = document.querySelector(`.line-card.active input[type="text"]`);
+            if (input) input.focus();
+        }, 10);
+    }
   },
   updateLineName(id, val) {
     const l = lineById(id);
@@ -725,21 +758,21 @@ const render = {
     const panel = $('ui-panel');
     panel.innerHTML = lines.map((l,i) => {
       const isSel = appState.selectedLineId === l.id;
-      const name = l.name || `Línea ${i+1}`;
+      const name = l.name || `Line ${i+1}`;
       if(isSel){
         return `
-        <div class="line-card active flex items-center p-3 rounded-2xl gap-3 bg-white ring-2 ring-blue-500 shadow-lg transition-all transform scale-[1.02]">
-          <div class="relative w-8 h-8 flex-shrink-0">
-             <div class="absolute inset-0 rounded-full shadow-inner ring-1 ring-black/10 transition-colors" style="background:${l.color}"></div>
+        <div class="line-card active flex items-center p-2 rounded-xl gap-3 bg-white shadow-lg transition-all border border-blue-500">
+          <div class="relative w-6 h-6 flex-shrink-0">
+             <div class="absolute inset-0 rounded-lg shadow-inner ring-1 ring-black/10 transition-colors" style="background:${l.color}"></div>
              <input type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value="${l.color}" oninput="app.updateLineColor('${l.id}', this.value)">
           </div>
-          <input type="text" class="flex-1 font-bold text-gray-800 bg-transparent border-b-2 border-blue-100 focus:border-blue-500 outline-none px-1 py-0.5 transition-colors" value="${name}" oninput="app.updateLineName('${l.id}', this.value)" placeholder="Nombre de línea">
+          <input type="text" class="flex-1 font-bold text-sm text-gray-800 bg-transparent border-none focus:ring-0 p-0 m-0" value="${name}" oninput="app.updateLineName('${l.id}', this.value)" placeholder="Line Name">
         </div>`;
       } else {
         return `
-        <div class="line-card flex items-center p-3 rounded-2xl gap-4 cursor-pointer bg-white border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all" onclick="app.selectLine('${l.id}')">
-          <div class="w-6 h-6 rounded-full shadow-inner ring-1 ring-black/5" style="background:${l.color}"></div>
-          <span class="text-sm font-bold text-gray-700 truncate select-none">${name}</span>
+        <div class="line-card flex items-center p-2 rounded-xl gap-3 cursor-pointer bg-white border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all" onclick="app.selectLine('${l.id}', true)">
+          <div class="w-6 h-6 rounded-lg shadow-inner ring-1 ring-black/5" style="background:${l.color}"></div>
+          <span class="text-sm font-bold text-gray-700 truncate select-none flex-1">${name}</span>
         </div>`;
       }
     }).join('');
@@ -764,7 +797,7 @@ const render = {
         const endLen = Math.hypot(endVec.x, endVec.y) || 1;
         const endDir = { x: endVec.x/endLen, y: endVec.y/endLen };
 
-        const extLen = GRID * 0.7; // AJUSTADO A 0.7
+        const extLen = GRID * 0.7; 
         const pStartExt = { x: pts[0].x + startDir.x * extLen, y: pts[0].y + startDir.y * extLen };
         const pEndExt = { x: pts[endIdx].x + endDir.x * extLen, y: pts[endIdx].y + endDir.y * extLen };
 
@@ -780,27 +813,18 @@ const render = {
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
         group.classList.add('line-group');
-        
+        if(isGhost) group.classList.add('dim');
+        else if(activeLid && activeLid !== l.id) group.classList.add('dimmed');
+        else if(gesture.active && gesture.mode === 'segment' && gesture.lid === l.id) group.classList.add('editing-focus');
+
         const allPts = [pStartExt, ...pts, pEndExt];
         const pl = document.createElementNS("http://www.w3.org/2000/svg","polyline");
-        
-        const applyClasses = (el) => {
-            el.classList.add('path');
-            if(isGhost) el.classList.add('dim');
-            else {
-                if(activeLid && activeLid !== l.id) el.classList.add('dimmed');
-                if(gesture.active && gesture.mode === 'segment' && gesture.lid === l.id) el.classList.add('editing-focus');
-            }
-        };
-
-        applyClasses(pl);
+        pl.classList.add('path');
         attr(pl,{ points: pointsToAttr(allPts), stroke: l.color, 'stroke-width': LINE_WIDTH, 'data-lid': l.id });
         group.appendChild(pl);
         
         const tStart = createTBar(pStartExt, startDir, 'line-tbar');
         const tEnd = createTBar(pEndExt, endDir, 'line-tbar');
-        applyClasses(tStart);
-        applyClasses(tEnd);
         group.appendChild(tStart);
         group.appendChild(tEnd);
 
@@ -815,7 +839,7 @@ const render = {
     
     if(drawing){
       const l = lineById(gesture.lid);
-      if(l){ } 
+      if(l){ }
     }
   },
 
@@ -867,11 +891,6 @@ const render = {
 
   renderHandles(){
     const layer = $('handles-layer'); layer.innerHTML = '';
-    const l = lineById(appState.selectedLineId); if(!l || l.nodes.length<2 || gesture.active) return;
-  },
-
-  renderUI(){
-    $('ui-panel').innerHTML = lines.map((l,i) => `<div class="line-card flex items-center p-3 rounded-2xl gap-4 cursor-pointer ${appState.selectedLineId===l.id?'bg-blue-600 text-white shadow-xl shadow-blue-200 ring-2 ring-blue-300' : 'bg-white border border-gray-100 hover:border-gray-300'}" onclick="appState.selectedLineId='${l.id}';render.refresh()"><div class="w-6 h-6 rounded-full shadow-inner" style="background:${l.color}"></div><span class="text-sm font-bold">Línea ${i+1}</span></div>`).join('');
   },
 
   renderGhost(){
@@ -890,7 +909,7 @@ const render = {
   }
 };
 
-/* ========= INTERACCIÓN ========= */
+/* ========= INTERACTION ========= */
 $('app-svg').addEventListener('pointerdown', e => {
   if (e.target.closest('#stop-popup')) return;
   app.hideStopPopup();
@@ -902,24 +921,14 @@ $('app-svg').addEventListener('pointerdown', e => {
   const pos = getMousePos(e);
   const hStop = getStopNear(pos, 32); 
   const hPath = e.target.closest('.path');
-  const hCap = e.target.closest('.handle');
 
   Object.assign(gesture, {
-    active: true,
-    moved: false,
-    startTime: Date.now(),
-    startPt: pos,
-    startScreen: { x: e.clientX, y: e.clientY },
-    lid: null,
-    liveNodes: [],
-    tempPoint: null,
-    anchorA: null,
-    anchorB: null,
-    lastAppliedHover: null,
+    active: true, moved: false, startTime: Date.now(),
+    startPt: pos, startScreen: { x: e.clientX, y: e.clientY },
+    lid: null, liveNodes: [], tempPoint: null,
+    anchorA: null, anchorB: null, lastAppliedHover: null,
     initialTargetStop: hStop ? hStop.id : null,
-    prevRaw: pos,
-    touchLatch: new Set(),
-    touchedStops: new Set()
+    prevRaw: pos, touchLatch: new Set(), touchedStops: new Set()
   });
 
   // 1. Check Line Extensions (High priority for T-bars)
@@ -927,68 +936,34 @@ $('app-svg').addEventListener('pointerdown', e => {
   for (const l of lines) {
     const info = getLinePathWithExtensions(l, buildCorridors());
     if (info) {
-      // Check distance to the T-bar specifically or the extension segment
-      // FIX: Use generous radius for T-bar tip to prioritize over stop
-      const DIST_T_BAR = 24; 
-      const nearStart = dist(pos, info.pStartExt) < DIST_T_BAR;
-      const nearEnd = dist(pos, info.pEndExt) < DIST_T_BAR;
-      
-      const dStartSeg = distPointToSeg(pos, info.pStartExt, info.pts[0]);
-      const dEndSeg = distPointToSeg(pos, info.pts[info.pts.length - 1], info.pEndExt);
-      const EXT_HIT_DIST = 12;
+      const DIST_T_BAR_TIP = 24; 
+      const DIST_TO_NODES = 15;
+      const distToStartTip = dist(pos, info.pStartExt);
+      const distToEndTip = dist(pos, info.pEndExt);
+      const sNode = stopById(l.nodes[0]);
+      const eNode = stopById(l.nodes[l.nodes.length-1]);
+      const distToSNode = sNode ? dist(pos, sNode) : Infinity;
+      const distToENode = eNode ? dist(pos, eNode) : Infinity;
 
-      let distToStartNode = Infinity;
-      let distToEndNode = Infinity;
-      if (l.nodes.length > 0) {
-          const sNode = stopById(l.nodes[0]);
-          if(sNode) distToStartNode = dist(pos, sNode);
-          const eNode = stopById(l.nodes[l.nodes.length-1]);
-          if(eNode) distToEndNode = dist(pos, eNode);
+      if (distToStartTip < DIST_T_BAR_TIP && distToSNode > DIST_TO_NODES) {
+        gesture.mode = 'extend'; gesture.lid = l.id; app.selectLine(l.id, false);
+        gesture.liveNodes = [...l.nodes].reverse();
+        foundExt = true; break;
       }
-
-      // Prioritize explicit T-bar hit or clear segment hit
-      if (nearStart || (dStartSeg < EXT_HIT_DIST && distToStartNode > 15)) {
-        gesture.mode = 'extend';
-        gesture.lid = l.id;
-        app.selectLine(l.id);
-        gesture.liveNodes = [...l.nodes].reverse(); // Extend from start
-        foundExt = true;
-        break;
-      }
-      if (nearEnd || (dEndSeg < EXT_HIT_DIST && distToEndNode > 15)) {
-        gesture.mode = 'extend';
-        gesture.lid = l.id;
-        app.selectLine(l.id);
-        gesture.liveNodes = [...l.nodes]; // Extend from end
-        foundExt = true;
-        break;
+      if (distToEndTip < DIST_T_BAR_TIP && distToENode > DIST_TO_NODES) {
+        gesture.mode = 'extend'; gesture.lid = l.id; app.selectLine(l.id, false);
+        gesture.liveNodes = [...l.nodes];
+        foundExt = true; break;
       }
     }
   }
 
-  if (foundExt) {
-    render.drawMap();
-    return;
-  }
-
-  // 2. Check Stops (New Line branching)
-  if (hStop) {
-    gesture.mode = 'newLine';
-    gesture.liveNodes = [hStop.id];
-    render.drawMap();
-    return;
-  }
-
-  // 3. Check Handles (if visible)
-  if (hCap) {
-    // ...
-  }
-
-  // 4. Check Path (Segment Edit)
+  if (foundExt) { render.drawMap(); render.drawUI(); return; }
+  if (hStop) { gesture.mode = 'newLine'; gesture.liveNodes = [hStop.id]; render.drawMap(); render.drawUI(); return; }
   if (hPath) {
     const lid = hPath.dataset.lid;
     const hit = findNearestLinkOnLine(lid, pos);
-    app.selectLine(lid);
+    app.selectLine(lid, false);
     gesture.lid = lid;
     if (hit) {
       gesture.mode = 'segment';
@@ -996,14 +971,11 @@ $('app-svg').addEventListener('pointerdown', e => {
       gesture.anchorA = l.nodes[hit.i];
       gesture.anchorB = l.nodes[hit.i + 1];
     }
-    render.drawMap();
-    return;
+    render.drawMap(); render.drawUI(); return;
   }
 
-  // 5. Empty Click
   gesture.mode = 'tapEmpty';
   appState.panStart = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
-  // Don't deselect yet; wait for pointerup to see if it was a click or drag
   render.drawMap();
 });
 
@@ -1020,20 +992,16 @@ $('app-svg').addEventListener('pointermove', e => {
     if(h && !gesture.touchLatch.has(h.id)){
       const inLine = l.nodes.includes(h.id);
       
-      const distToStop = minDistToStopVisual(curr, h, corridorsObj);
-      const threshold = inLine ? 10 : 36;
-
-      if (distToStop <= threshold) {
-        if(inLine) { 
-          const result = toggleStopOnLine(l, h.id, gesture.anchorA, gesture.anchorB, curr);
-          gesture.anchorA = result.a; gesture.anchorB = result.b;
-          if(result.changed) gesture.touchedStops.add(h.id); 
-        } else if (!gesture.touchedStops.has(h.id)) {
-          const result = toggleStopOnLine(l, h.id, gesture.anchorA, gesture.anchorB, curr);
-          gesture.anchorA = result.a; gesture.anchorB = result.b;
-        }
-        gesture.touchLatch.add(h.id); pulseStop(h.id);
+      if(inLine) { 
+        const result = toggleStopOnLine(l, h.id, gesture.anchorA, gesture.anchorB, curr);
+        gesture.anchorA = result.a; gesture.anchorB = result.b;
+        gesture.touchedStops.add(h.id);
+      } else if (!gesture.touchedStops.has(h.id)) {
+        const result = toggleStopOnLine(l, h.id, gesture.anchorA, gesture.anchorB, curr);
+        gesture.anchorA = result.a; gesture.anchorB = result.b;
       }
+      
+      gesture.touchLatch.add(h.id); pulseStop(h.id);
     } else if(!h && gesture.moved){
       const bendKey = [gesture.anchorA, gesture.anchorB].sort().join('-');
       if(!l.bends) l.bends = {}; l.bends[bendKey] = { x: curr.x, y: curr.y };
@@ -1064,10 +1032,7 @@ $('app-svg').addEventListener('pointerup', e => {
   if (gesture.initialTargetStop && !gesture.moved && dur < TAP_THRESHOLD) { 
     app.showStopPopup(gesture.initialTargetStop, e.clientX, e.clientY); 
   } else if(wasTapEmpty && !gesture.moved && dur < TAP_THRESHOLD){
-    if(appState.selectedLineId){ 
-        appState.selectedLineId = null; 
-        render.drawUI(); 
-    }
+    if(appState.selectedLineId){ appState.selectedLineId = null; render.drawUI(); }
     else {
       const sPos = { x: snap(getMousePos(e).x), y: snap(getMousePos(e).y) };
       if(!getStopNear(sPos, 20)){ 
@@ -1076,9 +1041,8 @@ $('app-svg').addEventListener('pointerup', e => {
       }
     }
   } else if(gesture.mode==='newLine' && gesture.liveNodes.length >= 2){
-    const newLine = { id: 'l'+Date.now(), name: `Línea ${lines.length+1}`, color: colors.find(c => !new Set(lines.map(l=>l.color)).has(c)) || colors[0], nodes: [...gesture.liveNodes], bends: {} };
-    lines.push(newLine);
-    render.drawUI();
+    const newLine = { id: 'l'+Date.now(), name: `Line ${lines.length+1}`, color: colors.find(c => !new Set(lines.map(l=>l.color)).has(c)) || colors[0], nodes: [...gesture.liveNodes], bends: {} };
+    lines.push(newLine); render.drawUI();
   } else if(gesture.mode==='extend' && gesture.lid){
     const l = lineById(gesture.lid); if(l){ 
         if(gesture.liveNodes.length >= 2) {
@@ -1116,7 +1080,7 @@ const io = {
     const r = new FileReader(); r.onload = e => {
       try {
         const d = JSON.parse(atob(new DOMParser().parseFromString(e.target.result,"image/xml").querySelector('svg').dataset.metro));
-        stops=d.stops||[]; lines=d.lines||[]; corridorOrders=d.corridorOrders||{}; render.refresh();
+        stops=d.stops||[]; lines=d.lines||[]; corridorOrders=d.corridorOrders||{}; render.drawMap(); render.drawUI();
       } catch(err) { console.error(err); }
     }; if(inp.files[0]) r.readAsText(inp.files[0]);
   }
@@ -1125,8 +1089,7 @@ window.addEventListener('keydown', e => e.code==='Space'&&(appState.space=true))
 window.addEventListener('keyup', e => e.code==='Space'&&(appState.space=false));
 window.addEventListener('resize', setView);
 $('app-svg').addEventListener('wheel', setViewOnWheel, {passive:false});
-render.drawUI(); // Initial UI draw
-setView(); render.refresh();
+render.drawUI(); setView(); render.drawMap();
 </script>
 </body>
 </html>
