@@ -155,7 +155,7 @@
     border: 1px solid rgba(0,0,0,0.05);
   }
 
-  .line-card.active, .line-card.interact {
+  .line-card.active {
     animation: selectPulse 2s infinite;
   }
 
@@ -245,7 +245,7 @@
   <header class="absolute top-6 left-6 right-6 h-16 rounded-2xl flex items-center justify-between px-8 shadow-sm z-50">
     <div class="flex items-center gap-3 text-gray-900 font-bold tracking-tight">
       <div class="p-1 text-blue-600 flex items-center justify-center">
-        <!-- New Train Icon (Blue, no background) -->
+        <!-- New Train Icon -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 146.85 146.57" class="w-10 h-10">
           <path fill="currentColor" d="M 49.107143,133.17765 L 26.964286,133.17765 L 45,118.44551 L 35,118.50614 C 35,118.50614 32,117.57051 30,115.57051 C 28,113.57051 27,109.10591 27,109.10591 L 27,29.570511 C 27,29.570511 26.642857,28.041576 29.642857,24.570511 C 32.642857,21.099446 36,21.570511 36,21.570511 L 55,21.570511 C 55,21.570511 55,18.570511 57,16.570511 C 59,14.570511 62,14.973159 62,14.973159 L 88,14.973159 C 88,14.973159 91.160476,15.25284 92.714286,17.302654 C 94.280187,19.368419 93.990115,21.63516 93.990115,21.63516 L 113.03571,21.731225 C 113.03571,21.731225 117.28571,21.01694 119.55357,25.106225 C 121.72253,29.017186 121,31.570511 121,31.570511 L 121,109.10591 C 121,109.10591 121.375,114.08837 119.375,116.08837 C 117.375,118.08837 112.01786,118.55265 112.01786,118.55265 L 103.80357,118.55265 L 121,133.64194 L 100.08929,133.74908 L 89.928571,118.64194 L 57.017857,118.6598 L 49.107143,133.17765 Z"/>
           <rect x="38.407105" y="32.570511" width="71.592895" height="34" rx="4" ry="4" fill="#FFFFFF"/>
@@ -457,7 +457,6 @@ function densifyRoute(routePts){
   return out;
 }
 
-/* ========= CHUNKS AND CORRIDORS ========= */
 function chunkKey(p, q){
   const ax = p.x, ay = p.y, bx = q.x, by = q.y;
   if (ax < bx || (ax === bx && ay <= by)) return `${ax},${ay}|${bx},${by}`;
@@ -517,21 +516,20 @@ function stopVisualPointsForHit(s, corridorsObj){
   const pts = [{ x: s.x, y: s.y }];
   const style = s.style || 'standard';
   const stopLines = lines.filter(l => l.nodes.includes(s.id));
-  if(style === 'side-square' && stopLines.length > 0){
-    const l = stopLines[0], idx = l.nodes.indexOf(s.id), p = s, pN = stopById(l.nodes[idx+1]), pP = stopById(l.nodes[idx-1]);
-    const dir = pN ? {x:pN.x-p.x, y:pN.y-p.y} : (pP ? {x:p.x-pP.x, y:p.y-pP.y} : {x:1, y:0});
-    const n = getNormal({x:0,y:0}, dir);
-    pts.push({ x: s.x + n.x*12, y: s.y + n.y*12 });
-  }
-  else if(style === 'inline-dot' && stopLines.length > 0){
-    if(!corridorsObj) corridorsObj = buildCorridors();
-    for(const l of stopLines){
-      const idx = l.nodes.indexOf(s.id), pN = stopById(l.nodes[idx+1]), pP = stopById(l.nodes[idx-1]), pR = pN || pP;
-      if(!pR) continue;
-      const info = getCorridorInfoChunk(l.id, pN ? s : pP, pN ? pN : s, corridorsObj.map, corridorsObj.refs);
-      const n = getNormal({x:0,y:0}, {x:pR.x-s.x, y:pR.y-s.y});
-      pts.push({ x: s.x + n.x*info.offset, y: s.y + n.y*info.offset });
-    }
+  if((style === 'side-square' || style === 'inline-dot') && stopLines.length > 0){
+      if(!corridorsObj) corridorsObj = buildCorridors();
+      stopLines.forEach(l => {
+        const idx = l.nodes.indexOf(s.id);
+        const neighbor = stopById(l.nodes[idx+1]) || stopById(l.nodes[idx-1]);
+        if(!neighbor) return;
+        const dx = neighbor.x - s.x, dy = neighbor.y - s.y, dlen = Math.hypot(dx,dy)||1;
+        const pAdj = { x: s.x + (dx/dlen)*GRID, y: s.y + (dy/dlen)*GRID };
+        const info = getCorridorInfoChunk(l.id, s, pAdj, corridorsObj.map, corridorsObj.refs);
+        const n = getNormal(s, pAdj);
+        const lineX = s.x + n.x * info.offset, lineY = s.y + n.y * info.offset;
+        pts.push({ x: lineX, y: lineY });
+        if(style === 'side-square') pts.push({ x: lineX + n.x*12, y: lineY + n.y*12 });
+      });
   }
   return pts;
 }
@@ -544,43 +542,23 @@ function minDistToStopVisual(pos, s, corridorsObj){
 }
 
 function toggleStopOnLine(lineObj, sid, anchorA, anchorB, mousePos){
-  const nodes = lineObj.nodes;
-  const idx = nodes.indexOf(sid);
-
+  const nodes = lineObj.nodes, idx = nodes.indexOf(sid);
   if(idx !== -1){
-    // REMOVAL (Veteado)
-    // Keep safety check from provided snippet if desired, but user wants full revert
-    // The snippet: if(nodes.length <= 2) return { a: anchorA, b: anchorB };
-    if(nodes.length <= 2) return { a: anchorA, b: anchorB };
-
+    if(nodes.length <= 2) return { a: anchorA, b: anchorB, changed: false };
     const prev = nodes[idx-1], next = nodes[idx+1];
     lineObj.nodes = nodes.filter(x => x !== sid);
-    
-    if(lineObj.bends) {
+    if(lineObj.bends) { 
       if (prev && sid) delete lineObj.bends[[prev, sid].sort().join('-')];
       if (sid && next) delete lineObj.bends[[sid, next].sort().join('-')];
     }
-
-    let newA = (sid === anchorA) ? (prev || next) : anchorA;
-    let newB = (sid === anchorB) ? (next || prev) : anchorB;
-    
-    return { a: newA, b: newB };
+    return { a: (sid === anchorA) ? (prev || nodes[0]) : anchorA, b: (sid === anchorB) ? (next || nodes[nodes.length-1]) : anchorB, changed: true };
   } else {
-    // INSERTION
     let aIdx = nodes.indexOf(anchorA), bIdx = nodes.indexOf(anchorB);
-    if(aIdx === -1 || bIdx === -1) { 
-        const hit = findNearestLinkOnLine(lineObj.id, mousePos); 
-        aIdx = hit.i; bIdx = hit.i + 1; 
-        anchorA = nodes[aIdx]; anchorB = nodes[bIdx]; 
-    }
+    if(aIdx === -1 || bIdx === -1) { const hit = findNearestLinkOnLine(lineObj.id, mousePos); aIdx = hit.i; bIdx = hit.i + 1; anchorA = nodes[aIdx]; anchorB = nodes[bIdx]; }
     const insertPos = Math.max(aIdx, bIdx);
     nodes.splice(insertPos, 0, sid);
-    
-    const distA = dist(mousePos, stopById(anchorA));
-    const distB = dist(mousePos, stopById(anchorB));
-    
-    if(distA < distB) return { a: anchorA, b: sid };
-    return { a: sid, b: anchorB };
+    const distA = dist(mousePos, stopById(anchorA)), distB = dist(mousePos, stopById(anchorB));
+    return (distA < distB) ? { a: anchorA, b: sid, changed: true } : { a: sid, b: anchorB, changed: true };
   }
 }
 
@@ -787,20 +765,16 @@ const render = {
         const nodesToUse = (isGhost && gesture.mode === 'newLine' && gesture.liveNodes.length) ? gesture.liveNodes : l.nodes;
         const pts = buildLinePath(l, nodesToUse, corridorsObj);
         if (pts.length < 2) return;
-
         const startVec = { x: pts[0].x - pts[1].x, y: pts[0].y - pts[1].y };
         const startLen = Math.hypot(startVec.x, startVec.y) || 1;
         const startDir = { x: startVec.x/startLen, y: startVec.y/startLen };
-
         const endIdx = pts.length - 1;
         const endVec = { x: pts[endIdx].x - pts[endIdx-1].x, y: pts[endIdx].y - pts[endIdx-1].y };
         const endLen = Math.hypot(endVec.x, endVec.y) || 1;
         const endDir = { x: endVec.x/endLen, y: endVec.y/endLen };
-
         const extLen = GRID * 0.7; 
         const pStartExt = { x: pts[0].x + startDir.x * extLen, y: pts[0].y + startDir.y * extLen };
         const pEndExt = { x: pts[endIdx].x + endDir.x * extLen, y: pts[endIdx].y + endDir.y * extLen };
-
         const createTBar = (pt, dir, className) => {
             const barW = 20; 
             const perp = { x: -dir.y, y: dir.x };
@@ -810,36 +784,26 @@ const render = {
             attr(line, { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke: l.color, "stroke-width": LINE_WIDTH, "stroke-linecap": "round", class: className + " path" });
             return line;
         };
-
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
         group.classList.add('line-group');
         if(isGhost) group.classList.add('dim');
         else if(activeLid && activeLid !== l.id) group.classList.add('dimmed');
         else if(gesture.active && gesture.mode === 'segment' && gesture.lid === l.id) group.classList.add('editing-focus');
-
         const allPts = [pStartExt, ...pts, pEndExt];
         const pl = document.createElementNS("http://www.w3.org/2000/svg","polyline");
         pl.classList.add('path');
         attr(pl,{ points: pointsToAttr(allPts), stroke: l.color, 'stroke-width': LINE_WIDTH, 'data-lid': l.id });
         group.appendChild(pl);
-        
         const tStart = createTBar(pStartExt, startDir, 'line-tbar');
         const tEnd = createTBar(pEndExt, endDir, 'line-tbar');
         group.appendChild(tStart);
         group.appendChild(tEnd);
-
         const container = isGhost ? edit : layer;
         container.appendChild(group);
     };
-
     for(const l of lines){
       if(drawing && l.id === gesture.lid) continue;
       drawLineWithExtensions(l, false);
-    }
-    
-    if(drawing){
-      const l = lineById(gesture.lid);
-      if(l){ }
     }
   },
 
@@ -849,36 +813,65 @@ const render = {
     const editedLine = (gesture.active && gesture.lid) ? lineById(gesture.lid) : (appState.selectedLineId ? lineById(appState.selectedLineId) : null);
     const editedNodes = editedLine ? new Set(editedLine.nodes) : new Set();
     const activeNodes = (gesture.active && gesture.mode !== 'segment') ? new Set(gesture.liveNodes) : new Set();
+    
     stops.forEach(s => {
       const g = document.createElementNS("http://www.w3.org/2000/svg","g");
       g.id = s.id; g.classList.add('stop');
       if(activeNodes.has(s.id)) g.classList.add('onSel');
       if(gesture.hoverStopId === s.id) g.classList.add('hover');
+      
       const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
       ring.classList.add('stop-ring'); attr(ring,{cx:s.x, cy:s.y, r:18});
       if (editedNodes.has(s.id) && !gesture.touchedStops.has(s.id)) { g.classList.add('in-edited-line'); ring.style.stroke = editedLine.color; }
       g.appendChild(ring);
+      
       const style = s.style || 'standard', stopLines = lines.filter(l => l.nodes.includes(s.id));
-      if(style === 'side-square' && stopLines.length > 0){
-        const l = stopLines[0], p = s, pN = stopById(l.nodes[l.nodes.indexOf(s.id)+1]), pP = stopById(l.nodes[l.nodes.indexOf(s.id)-1]);
-        const dir = pN ? {x:pN.x-p.x, y:pN.y-p.y} : (pP ? {x:p.x-pP.x, y:p.y-pP.y} : {x:1, y:0}), n = getNormal({x:0,y:0}, dir), shape = document.createElementNS("http://www.w3.org/2000/svg","rect");
-        attr(shape, { x: s.x + n.x*12 - 6, y: s.y + n.y*12 - 6, width: 12, height: 12, rx: 2, fill: l.color, class: 'stop-side-square' });
+      
+      if((style === 'side-square' || style === 'inline-dot') && stopLines.length > 0) {
+        stopLines.forEach(l => {
+            const idx = l.nodes.indexOf(s.id);
+            const pN = stopById(l.nodes[idx+1]);
+            const pP = stopById(l.nodes[idx-1]);
+            const neighbor = pN || pP;
+            if(!neighbor) return;
+            
+            // Calculate direction to closest grid adjacent point
+            const dx = neighbor.x - s.x, dy = neighbor.y - s.y, dlen = Math.hypot(dx,dy)||1;
+            const pAdj = { x: s.x + (dx/dlen)*GRID, y: s.y + (dy/dlen)*GRID };
+            
+            const info = getCorridorInfoChunk(l.id, s, pAdj, corridorsObj.map, corridorsObj.refs);
+            const n = getNormal(s, pAdj);
+            
+            const centerX = s.x + n.x * info.offset;
+            const centerY = s.y + n.y * info.offset;
+
+            if (style === 'inline-dot') {
+                const dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+                attr(dot, { cx: centerX, cy: centerY, r: 4.5, class: 'stop-inline-dot' });
+                g.appendChild(dot);
+            } else {
+                const shape = document.createElementNS("http://www.w3.org/2000/svg","rect");
+                attr(shape, { 
+                    x: centerX + n.x*12 - 6, 
+                    y: centerY + n.y*12 - 6, 
+                    width: 12, height: 12, rx: 2, 
+                    fill: l.color, 
+                    class: 'stop-side-square' 
+                });
+                g.appendChild(shape);
+            }
+        });
+      } else if(style === 'standard' || stopLines.length === 0) {
+        const shape = document.createElementNS("http://www.w3.org/2000/svg","circle"); 
+        attr(shape,{cx:s.x, cy:s.y, r:13.5, class: 'stop-shape'}); 
         g.appendChild(shape);
-      } else if(style === 'inline-dot'){
-        if (stopLines.length > 0) {
-          stopLines.forEach(l => {
-            const pN = stopById(l.nodes[l.nodes.indexOf(s.id)+1]), pP = stopById(l.nodes[l.nodes.indexOf(s.id)-1]), pR = pN || pP; if(!pR) return;
-            const info = getCorridorInfoChunk(l.id, pN?s:pP, pN?pN:s, corridorsObj.map, corridorsObj.refs), n = getNormal({x:0,y:0}, {x:pR.x-s.x, y:pR.y-s.y}), dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
-            attr(dot, { cx: s.x + n.x*info.offset, cy: s.y + n.y*info.offset, r: 4.5, class: 'stop-inline-dot' }); g.appendChild(dot);
-          });
-        } else {
-          const dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
-          attr(dot, { cx: s.x, cy: s.y, r: 4, class: 'stop-orphan-dot' });
-          g.appendChild(dot);
+        if(style === 'inline-dot' && stopLines.length === 0) {
+            const dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+            attr(dot, { cx: s.x, cy: s.y, r: 4, class: 'stop-orphan-dot' });
+            g.appendChild(dot);
         }
-      } else {
-        const shape = document.createElementNS("http://www.w3.org/2000/svg","circle"); attr(shape,{cx:s.x, cy:s.y, r:13.5, class: 'stop-shape'}); g.appendChild(shape);
       }
+
       const hit = document.createElementNS("http://www.w3.org/2000/svg","circle"); attr(hit,{cx:s.x, cy:s.y, r:22, fill:"transparent"}); g.appendChild(hit);
       if (s.name) {
         const txt = document.createElementNS("http://www.w3.org/2000/svg","text"); txt.classList.add('stop-label'); txt.textContent = s.name;
@@ -931,7 +924,6 @@ $('app-svg').addEventListener('pointerdown', e => {
     prevRaw: pos, touchLatch: new Set(), touchedStops: new Set()
   });
 
-  // 1. Check Line Extensions (High priority for T-bars)
   let foundExt = false;
   for (const l of lines) {
     const info = getLinePathWithExtensions(l, buildCorridors());
@@ -991,17 +983,14 @@ $('app-svg').addEventListener('pointermove', e => {
     if(gesture.touchLatch.size){ for(const sid of gesture.touchLatch) if(minDistToStopVisual(curr, stopById(sid), corridorsObj) > 46) gesture.touchLatch.delete(sid); }
     if(h && !gesture.touchLatch.has(h.id)){
       const inLine = l.nodes.includes(h.id);
-      
-      if(inLine) { 
+      const distToStop = minDistToStopVisual(curr, h, corridorsObj);
+      const threshold = inLine ? 10 : 36;
+      if (distToStop <= threshold) {
         const result = toggleStopOnLine(l, h.id, gesture.anchorA, gesture.anchorB, curr);
         gesture.anchorA = result.a; gesture.anchorB = result.b;
-        gesture.touchedStops.add(h.id);
-      } else if (!gesture.touchedStops.has(h.id)) {
-        const result = toggleStopOnLine(l, h.id, gesture.anchorA, gesture.anchorB, curr);
-        gesture.anchorA = result.a; gesture.anchorB = result.b;
+        if(inLine && result.changed) gesture.touchedStops.add(h.id); 
+        gesture.touchLatch.add(h.id); pulseStop(h.id);
       }
-      
-      gesture.touchLatch.add(h.id); pulseStop(h.id);
     } else if(!h && gesture.moved){
       const bendKey = [gesture.anchorA, gesture.anchorB].sort().join('-');
       if(!l.bends) l.bends = {}; l.bends[bendKey] = { x: curr.x, y: curr.y };
@@ -1025,46 +1014,27 @@ $('app-svg').addEventListener('pointermove', e => {
 $('app-svg').addEventListener('pointerup', e => {
   const dur = Date.now() - gesture.startTime; $('app-svg').classList.remove('panning');
   if(!gesture.active && !appState.panStart) return;
-  
   const wasEditing = (gesture.mode === 'segment' || gesture.mode === 'extend' || gesture.mode === 'newLine');
   const wasTapEmpty = (gesture.mode === 'tapEmpty');
-
-  if (gesture.initialTargetStop && !gesture.moved && dur < TAP_THRESHOLD) { 
-    app.showStopPopup(gesture.initialTargetStop, e.clientX, e.clientY); 
-  } else if(wasTapEmpty && !gesture.moved && dur < TAP_THRESHOLD){
+  if (gesture.initialTargetStop && !gesture.moved && dur < TAP_THRESHOLD) { app.showStopPopup(gesture.initialTargetStop, e.clientX, e.clientY); }
+  else if(wasTapEmpty && !gesture.moved && dur < TAP_THRESHOLD){
     if(appState.selectedLineId){ appState.selectedLineId = null; render.drawUI(); }
     else {
       const sPos = { x: snap(getMousePos(e).x), y: snap(getMousePos(e).y) };
-      if(!getStopNear(sPos, 20)){ 
-        stops.push({ id: 's'+Date.now(), ...sPos, name: "", font: "sans-serif", style: "standard" }); 
-        pulseStop(stops[stops.length-1].id); 
-      }
+      if(!getStopNear(sPos, 20)){ stops.push({ id: 's'+Date.now(), ...sPos, name: "", font: "sans-serif", style: "standard" }); pulseStop(stops[stops.length-1].id); }
     }
   } else if(gesture.mode==='newLine' && gesture.liveNodes.length >= 2){
     const newLine = { id: 'l'+Date.now(), name: `Line ${lines.length+1}`, color: colors.find(c => !new Set(lines.map(l=>l.color)).has(c)) || colors[0], nodes: [...gesture.liveNodes], bends: {} };
     lines.push(newLine); render.drawUI();
   } else if(gesture.mode==='extend' && gesture.lid){
     const l = lineById(gesture.lid); if(l){ 
-        if(gesture.liveNodes.length >= 2) {
-            l.nodes = (gesture.liveNodes[0] === l.nodes[0]) ? [...gesture.liveNodes] : [...gesture.liveNodes].reverse(); 
-        } else {
-            lines = lines.filter(x => x.id !== l.id); 
-            render.drawUI();
-        }
+        if(gesture.liveNodes.length >= 2) l.nodes = (gesture.liveNodes[0] === l.nodes[0]) ? [...gesture.liveNodes] : [...gesture.liveNodes].reverse(); 
+        else { lines = lines.filter(x => x.id !== l.id); render.drawUI(); }
     }
   }
-  
-  if (gesture.lid) {
-    const l = lineById(gesture.lid);
-    if (l) cleanUpLine(l);
-  }
+  if (gesture.lid) { const l = lineById(gesture.lid); if (l) cleanUpLine(l); }
   ensureSpatialConsistency();
-
-  if ((gesture.moved && wasEditing) || (wasTapEmpty && !gesture.moved)) {
-     appState.selectedLineId = null;
-     render.drawUI();
-  }
-
+  if ((gesture.moved && wasEditing) || (wasTapEmpty && !gesture.moved)) { appState.selectedLineId = null; render.drawUI(); }
   gesture.active = false; gesture.mode = null; gesture.lid = null; gesture.hoverStopId = null; 
   gesture.touchLatch = new Set(); gesture.touchedStops = new Set(); appState.panStart = null; 
   render.drawMap();
@@ -1072,16 +1042,23 @@ $('app-svg').addEventListener('pointerup', e => {
 
 const io = {
   export(){
-    const data = btoa(JSON.stringify({stops, lines, corridorOrders})); const a = document.createElement('a');
+    const data = btoa(unescape(encodeURIComponent(JSON.stringify({stops, lines, corridorOrders}))));
+    const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([$('app-svg').outerHTML.replace('<svg', `<svg xmlns="http://www.w3.org/2000/svg" data-metro="${data}"`)], {type:'image/svg+xml'}));
     a.download='metro.svg'; a.click();
   },
   import(inp){
     const r = new FileReader(); r.onload = e => {
       try {
-        const d = JSON.parse(atob(new DOMParser().parseFromString(e.target.result,"image/xml").querySelector('svg').dataset.metro));
-        stops=d.stops||[]; lines=d.lines||[]; corridorOrders=d.corridorOrders||{}; render.drawMap(); render.drawUI();
-      } catch(err) { console.error(err); }
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(e.target.result, "image/svg+xml");
+        const svg = doc.querySelector('svg');
+        if(svg && svg.dataset.metro){
+            const d = JSON.parse(decodeURIComponent(escape(atob(svg.dataset.metro))));
+            stops=d.stops||[]; lines=d.lines||[]; corridorOrders=d.corridorOrders||{}; 
+            render.drawMap(); render.drawUI();
+        }
+      } catch(err) { console.error(err); alert("Error importing file"); }
     }; if(inp.files[0]) r.readAsText(inp.files[0]);
   }
 };
