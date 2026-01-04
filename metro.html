@@ -8,20 +8,20 @@
 
 <style>
   :root{
-    --bg0:#f3f4f7;
-    --bg1:#eceef3;
+    --bg0:#f8f9fa;
+    --bg1:#f1f3f4;
     --ink:#202124;
-    --soft:#6b7280;
+    --soft:#5f6368;
     --lc:#1a73e8;
+    --accent: #3b82f6;
   }
 
   html,body{
     margin:0; width:100%; height:100%;
     overflow:hidden; user-select:none;
-    font-family:"Google Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    background:
-      radial-gradient(1200px 700px at 50% 45%, rgba(255,255,255,0.95), rgba(245,246,249,0.75) 55%, rgba(232,234,238,0.95) 100%),
-      linear-gradient(180deg, var(--bg0), var(--bg1));
+    font-family:"Google Sans", system-ui, -apple-system, sans-serif;
+    background: 
+      radial-gradient(circle at 50% 50%, #ffffff 0%, #f1f3f4 100%);
   }
 
   #app-svg{
@@ -29,110 +29,269 @@
     cursor:crosshair;
     touch-action:none;
   }
+  
+  #app-svg.panning { cursor: grabbing; }
 
-  .path{
+  /* Grupo de Línea para Hover Sincronizado */
+  .line-group {
+    pointer-events: stroke;
+    cursor: pointer;
+  }
+  
+  /* Engrosamiento sincronizado al hacer hover sobre el grupo */
+  .line-group:hover .path, 
+  .line-group:hover .line-tbar { 
+    stroke-width: 14px !important; 
+  }
+
+  .path, .line-tbar {
     fill:none;
     stroke-linecap:round;
     stroke-linejoin:round;
-    pointer-events:stroke;
-    cursor:pointer;
-    transition: opacity .15s ease, stroke-width .15s ease;
+    transition: opacity 0.3s ease, stroke-width 0.2s ease;
   }
-  .path:hover{ stroke-width: 12.5px !important; }
-  .path.sel{ stroke-width: 12px !important; }
-  .path.dim{ opacity:.15; }
-  .path.reordering{ stroke-width: 13px !important; filter: drop-shadow(0 0 6px currentColor); }
+  
+  /* Clases de estado para la línea */
+  .path.editing-focus, .line-tbar.editing-focus { stroke-width: 12px !important; filter: drop-shadow(0 0 4px rgba(0,0,0,0.1)); }
+  .path.dimmed, .line-tbar.dimmed { opacity: 0.15 !important; }
 
-  #ghostShadow{ pointer-events:none; opacity:.15; }
+  #ghostShadow{ pointer-events:none; opacity:0.1; }
   #ghost{
     pointer-events:none;
-    opacity:.9;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,.1));
+    opacity:0.8;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
   }
 
+  /* Estaciones */
   .stop-shape{
-    fill:#fff;
-    stroke:var(--ink);
-    stroke-width:3;
-    vector-effect: non-scaling-stroke;
-    transition: transform .12s ease;
+    fill:#ffffff;
+    stroke:#3c4043;
+    stroke-width:4.5;
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), stroke 0.2s;
     transform-box: fill-box;
     transform-origin:center;
   }
+  
+  .stop-side-square {
+    stroke-width: 0;
+    transition: transform 0.2s ease;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .stop-inline-dot {
+    fill: #ffffff;
+    stroke: none;
+    pointer-events: none;
+  }
+
+  /* Outline para stops estilo 3 huerfanos */
+  .stop-orphan-dot {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2px;
+    pointer-events: none;
+  }
+
+  /* Anillo de Resaltado y Guía */
   .stop-ring{
     fill:none;
     stroke: var(--lc);
-    stroke-width: 6;
+    stroke-width: 0;
     opacity: 0;
-    vector-effect: non-scaling-stroke;
-    transition: opacity .12s ease;
+    transition: opacity 0.2s ease, stroke-width 0.2s ease;
   }
-  .stop.hover .stop-shape{ transform: scale(1.15); }
-  .stop.onSel .stop-ring{ opacity: 0.8; }
-  .stop.pulse .stop-shape{ animation: pulseAnim .25s cubic-bezier(.2,.9,.2,1.1); }
+
+  .stop.hover .stop-shape, .stop.hover .stop-side-square { 
+    transform: scale(1.25);
+    stroke: var(--accent);
+  }
+
+  /* Guía visual: desaparece al hacer hover (ratón encima) */
+  .stop.in-edited-line:not(.hover) .stop-ring {
+    opacity: 0.35;
+    stroke-width: 10;
+  }
+  
+  .stop.onSel .stop-ring{ 
+    opacity: 0.9;
+    stroke-width: 6;
+  }
+
+  .stop.pulse .stop-shape, .stop.pulse .stop-side-square { 
+    animation: pulseAnim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+  }
+
+  .stop-label {
+    fill: #3c4043;
+    font-size: 12px;
+    font-weight: 700;
+    pointer-events: none;
+    text-shadow: 0 0 4px white, 0 0 4px white;
+    transition: opacity 0.2s;
+  }
 
   @keyframes pulseAnim{
     0%{ transform:scale(1); }
-    50%{ transform:scale(1.3); }
+    50%{ transform:scale(1.4); }
     100%{ transform:scale(1); }
   }
 
-  .handle{ cursor: grab; }
-  .handle:active{ cursor: grabbing; }
+  .handle{ 
+    cursor: grab; 
+    transition: transform 0.2s;
+  }
+  .handle:active{ cursor: grabbing; transform: scale(1.1); }
 
-  header, #ui-panel{
-    background: rgba(255,255,255,0.85) !important;
-    backdrop-filter: blur(10px);
+  header, #ui-panel {
+    background: rgba(255,255,255,0.9) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,0,0,0.05);
   }
 
-  .corridor-hint{
+  #stop-popup {
     position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    padding: 16px;
+    min-width: 240px;
+    z-index: 100;
+    display: none;
+    animation: popupIn 0.2s cubic-bezier(0.2, 0, 0, 1);
   }
-  .corridor-hint.visible{ opacity: 1; }
+  @keyframes popupIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  #stop-popup input {
+    width: 100%;
+    border: 2px solid #f1f3f4;
+    font-weight: 600;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f8f9fa;
+    margin-bottom: 16px;
+    transition: all 0.2s;
+  }
+  #stop-popup input:focus { outline: none; border-color: var(--accent); background: white; }
+  
+  .popup-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #80868b;
+    margin-bottom: 8px;
+    letter-spacing: 0.08em;
+  }
+  
+  .popup-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3c4043;
+    transition: background 0.2s;
+  }
+  .popup-btn:hover { background: #f1f3f4; }
+  .popup-btn.danger { color: #d93025; }
+  .popup-btn.danger:hover { background: #fce8e6; }
+
+  .selector-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .opt-btn {
+    aspect-ratio: 1;
+    border: 2px solid #f1f3f4;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+  }
+  .opt-btn:hover { border-color: #dadce0; }
+  .opt-btn.active { border-color: var(--accent); background: #e8f0fe; color: var(--accent); }
+
+  .line-tag {
+    display: inline-flex;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
 </style>
 </head>
 
 <body>
-  <header class="absolute top-4 left-4 right-4 h-14 rounded-2xl flex items-center justify-between px-6 shadow-sm z-50 border border-gray-200">
-    <div class="flex items-center gap-2 text-gray-800 font-medium">
-      <div class="p-1.5 bg-blue-50 rounded text-blue-600">
+  <header class="absolute top-6 left-6 right-6 h-16 rounded-2xl flex items-center justify-between px-8 shadow-sm z-50">
+    <div class="flex items-center gap-3 text-gray-900 font-bold tracking-tight">
+      <div class="p-2 bg-blue-600 rounded-lg text-white shadow-blue-200 shadow-lg">
         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.52 2 12 2zm0 18c-4.4 0-8-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm-5.5-2.5l7.5-3.2-7.5-3.2V17.5z"/></svg>
       </div>
       Metro Studio Lite
     </div>
-    <div class="flex gap-2">
-      <button onclick="$('inp').click()" class="px-4 py-2 hover:bg-gray-100 rounded-xl text-sm font-medium transition-colors">Importar</button>
+    <div class="flex gap-3">
+      <button onclick="$('inp').click()" class="px-5 py-2.5 hover:bg-gray-100 rounded-xl text-sm font-bold text-gray-600 transition-all">Importar</button>
       <input id="inp" type="file" hidden onchange="io.import(this)">
-      <button onclick="io.export()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium shadow-sm transition-all">Exportar</button>
+      <button onclick="io.export()" class="px-6 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl text-sm font-bold shadow-lg transition-all">Exportar Proyecto</button>
     </div>
   </header>
 
-  <div id="ui-panel" class="absolute bottom-6 left-6 w-64 max-h-[40vh] overflow-y-auto rounded-2xl p-2 shadow-xl border border-gray-200 z-40 flex flex-col-reverse gap-2 empty:hidden"></div>
+  <div id="ui-panel" class="absolute bottom-8 left-8 w-72 max-h-[45vh] overflow-y-auto rounded-2xl p-3 shadow-2xl z-40 flex flex-col-reverse gap-3 empty:hidden"></div>
 
-  <div id="corridor-hint" class="corridor-hint">Arrastra lateralmente para reordenar líneas en el corredor</div>
+  <div id="stop-popup">
+    <div class="popup-section-title">Nombre de la Estación</div>
+    <input type="text" id="popup-stop-name" placeholder="Ej: Sol, Atocha..." spellcheck="false" oninput="app.updateStopName(this.value)">
+    
+    <div class="popup-section-title">Estilo Visual</div>
+    <div class="selector-grid">
+      <div class="opt-btn style-opt" onclick="app.updateStopStyle('standard', this)" title="Estándar">
+        <div class="w-4 h-4 rounded-full border-2 border-current"></div>
+      </div>
+      <div class="opt-btn style-opt" onclick="app.updateStopStyle('side-square', this)" title="Lateral">
+        <div class="w-4 h-4 border-2 border-current"></div>
+      </div>
+      <div class="opt-btn style-opt" onclick="app.updateStopStyle('inline-dot', this)" title="Integrado">
+        <div class="w-2 h-2 rounded-full bg-current"></div>
+      </div>
+    </div>
+
+    <div class="popup-section-title">Tipografía</div>
+    <div class="selector-grid">
+      <div class="opt-btn font-opt" style="font-family: sans-serif;" onclick="app.updateStopFont('sans-serif', this)">A</div>
+      <div class="opt-btn font-opt" style="font-family: serif;" onclick="app.updateStopFont('serif', this)">A</div>
+      <div class="opt-btn font-opt" style="font-family: monospace;" onclick="app.updateStopFont('monospace', this)">A</div>
+      <div class="opt-btn font-opt" style="font-weight: 800;" onclick="app.updateStopFont('bold', this)">A</div>
+      <div class="opt-btn font-opt" style="font-style: italic;" onclick="app.updateStopFont('italic', this)">A</div>
+    </div>
+
+    <button class="popup-btn danger" onclick="app.deleteCurrentStop()">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      Eliminar del Mapa
+    </button>
+
+    <div class="mt-4 pt-4 border-t border-gray-100">
+      <div class="popup-section-title">Líneas en esta parada</div>
+      <div id="popup-stop-lines" class="flex flex-wrap gap-2 px-1"></div>
+    </div>
+  </div>
 
   <svg id="app-svg" preserveAspectRatio="xMidYMid slice">
     <defs>
       <pattern id="grid-pattern" x="-20" y="-20" width="40" height="40" patternUnits="userSpaceOnUse">
-        <circle cx="20" cy="20" r="1.5" fill="#cbd5e1"/>
+        <circle cx="20" cy="20" r="1.2" fill="#dadce0"/>
       </pattern>
-      <radialGradient id="vignette" cx="50%" cy="45%" r="70%">
-        <stop offset="0%" stop-color="rgba(0,0,0,0)" /><stop offset="100%" stop-color="rgba(0,0,0,0.05)" />
-      </radialGradient>
     </defs>
     <rect x="-10000" y="-10000" width="20000" height="20000" fill="url(#grid-pattern)"></rect>
-    <rect x="-10000" y="-10000" width="20000" height="20000" fill="url(#vignette)" pointer-events="none"></rect>
 
     <g id="lines-layer"></g>
     <g id="edit-layer"></g>
@@ -145,44 +304,35 @@
   </svg>
 
 <script>
-/* ========= CONFIGURACIÓN Y ESTADO ========= */
+/* ========= CONFIGURACIÓN ========= */
 const GRID = 40;
 const LINE_WIDTH = 10;
 const LINE_SPACING = 12;
-// IMPORTANTE: ya NO “suavizamos” (nada de transiciones que parezcan curvas)
-// todo son esquinas como el resto: intersección/miter o, si hace falta, bisel recto.
-const MITER_LIMIT = 6; // múltiplo del offset (recorta miters raros)
+const MITER_LIMIT = 6; 
+const TAP_THRESHOLD = 250; 
+const MOVE_THRESHOLD = 5; 
 
 let stops = [];
 let lines = [];
-let corridorOrders = {}; // por "chunk" del grid: "x1,y1|x2,y2"
+let corridorOrders = {}; 
 
-const colors = ['#EA4335','#4285F4','#34A853','#F4C20D','#AB47BC','#FF6D00'];
+const colors = ['#EA4335','#4285F4','#34A853','#F4C20D','#AB47BC','#FF6D00','#00ACC1','#795548'];
 let view = { x: 500, y: 375, w: 1000, h: 750 };
 
-const appState = { selectedLineId: null, space: false, panStart: null, mouseRaw: {x:0, y:0} };
+const appState = { selectedLineId: null, space: false, panStart: null, mouseRaw: {x:0, y:0}, popupStopId: null };
 
 const gesture = {
-  active: false,
-  mode: null,
-  moved: false,
-  startPt: null,
-  lid: null,
-  liveNodes: [],
+  active: false, mode: null, moved: false, startTime: 0,
+  startPt: null, startScreen: { x: 0, y: 0 }, 
+  lid: null, liveNodes: [], tempPoint: null,
+  anchorA: null, anchorB: null, lastAppliedHover: null,
+  initialTargetStop: null,
   hoverStopId: null,
-  tempPoint: null,
-  anchorA: null,
-  anchorB: null,
-  lastAppliedHover: null,
-  originalLineNodes: [],
-  corridorDragMode: null,
-  corridorOriginalOrder: [],
-  corridorChunkKey: null,
-  corridorChunkA: null,
-  corridorChunkB: null
+  touchLatch: new Set(),
+  touchedStops: new Set() 
 };
 
-/* ========= UTILIDADES BÁSICAS ========= */
+/* ========= UTILIDADES ========= */
 const $ = id => document.getElementById(id);
 const attr = (el, a) => { for (const k in a) el.setAttribute(k, a[k]); };
 const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
@@ -199,11 +349,13 @@ function getMousePos(evt){
 function stopById(id){ return stops.find(s=>s.id===id); }
 function lineById(id){ return lines.find(l=>l.id===id); }
 
-function getStopNear(pos, d=26){
-  let best=null, bd=Infinity;
+function getStopNear(pos, d=36, excludeIds = new Set()){
+  let best = null, bd = Infinity;
+  const corridorsObj = buildCorridors();
   for(const s of stops){
-    const dd = Math.hypot(s.x-pos.x, s.y-pos.y);
-    if(dd<d && dd<bd){ bd=dd; best=s; }
+    if(excludeIds && excludeIds.has(s.id)) continue;
+    let md = minDistToStopVisual(pos, s, corridorsObj);
+    if(md < d && md < bd){ bd = md; best = s; }
   }
   return best;
 }
@@ -216,7 +368,7 @@ function pulseStop(id){
 function distPointToSeg(p,a,b){
   const vx=b.x-a.x, vy=b.y-a.y, wx=p.x-a.x, wy=p.y-a.y;
   const vv = vx*vx+vy*vy || 1;
-  let t = Math.max(0, Math.min(1,(wx*vx+wy*vy)/vv));
+  let t = Math.max(0, Math.min(1,(wx*vx+vy*vy)/vv));
   return Math.hypot(p.x-(a.x+t*vx), p.y-(a.y+t*vy));
 }
 
@@ -224,12 +376,6 @@ function getNormal(p1, p2) {
   const dx = p2.x - p1.x, dy = p2.y - p1.y;
   const len = Math.hypot(dx, dy) || 1;
   return { x: -dy / len, y: dx / len };
-}
-
-function getTangent(p1, p2) {
-  const dx = p2.x - p1.x, dy = p2.y - p1.y;
-  const len = Math.hypot(dx, dy) || 1;
-  return { x: dx / len, y: dy / len };
 }
 
 function pointsToAttr(pts){ return pts.map(p => `${p.x},${p.y}`).join(' '); }
@@ -249,49 +395,32 @@ function setViewOnWheel(e){
   view.w = nw; setView();
 }
 
-/* ========= CHUNKS DE GRID PARA CORREDORES REALES ========= */
-
-// clave canónica para un chunk dirección-less
-function chunkKey(p, q){
-  const ax = p.x, ay = p.y, bx = q.x, by = q.y;
-  if (ax < bx || (ax === bx && ay <= by)) return `${ax},${ay}|${bx},${by}`;
-  return `${bx},${by}|${ax},${ay}`;
-}
-
-// parsea "x1,y1|x2,y2"
-function parseChunkKey(key){
-  const [a,b] = key.split('|');
-  const [ax,ay] = a.split(',').map(Number);
-  const [bx,by] = b.split(',').map(Number);
-  return { ax, ay, bx, by };
-}
-
-// normal estable SOLO para UI de reordenado (no para geometría de offsets)
-function stableNormalForChunkKeyWithRefs(key, refs){
-  // refs guarda una dirección "de referencia" real (primera vez que se ve el chunk)
-  // esto evita que en NE/SW cambie el “lado” por culpa del orden canónico x/y.
-  const ref = refs?.[key];
-  if(ref){
-    const len = Math.hypot(ref.dx, ref.dy) || 1;
-    return { x: -ref.dy/len, y: ref.dx/len };
+/* ========= GEOMETRÍA DE RUTAS ========= */
+function calculateRoute(p1, p2, influencePt){
+  const A = { x: p1.x, y: p1.y }, B = { x: p2.x, y: p2.y };
+  const dx = B.x - A.x, dy = B.y - A.y;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  if(adx < 0.5 || ady < 0.5 || Math.abs(adx - ady) < 0.5) return [A, B];
+  const sx = Math.sign(dx), sy = Math.sign(dy), diag = Math.min(adx, ady), extra = Math.abs(adx - ady), dom = (adx > ady) ? 'x' : 'y';
+  let pre = extra / 2;
+  if(influencePt){
+    if(dom === 'x') pre = (influencePt.x - A.x) * sx - diag / 2;
+    else pre = (influencePt.y - A.y) * sy - diag / 2;
   }
-  // fallback si no hay ref (no debería pasar)
-  const {ax,ay,bx,by} = parseChunkKey(key);
-  const dx = bx-ax, dy = by-ay;
-  const len = Math.hypot(dx,dy) || 1;
-  return { x: -dy/len, y: dx/len };
+  pre = clamp(snapLen(pre), 0, extra);
+  const pts = [A];
+  const pushIfNew = (p) => { if(dist(pts[pts.length-1], p) > 0.5) pts.push(p); };
+  if(dom === 'x'){
+    pushIfNew({ x: A.x + sx*pre, y: A.y });
+    pushIfNew({ x: A.x + sx*(pre+diag), y: A.y + sy*diag });
+  } else {
+    pushIfNew({ x: A.x, y: A.y + sy*pre });
+    pushIfNew({ x: A.x + sx*diag, y: A.y + sy*(pre+diag) });
+  }
+  pushIfNew(B);
+  return pts;
 }
 
-// intersección de dos rectas infinitas: P + tR con Q + uS
-function lineLineIntersection(P, R, Q, S){
-  const rxs = R.x*S.y - R.y*S.x;
-  if(Math.abs(rxs) < 1e-9) return null; // paralelas/colineales
-  const QmP = { x: Q.x - P.x, y: Q.y - P.y };
-  const t = (QmP.x*S.y - QmP.y*S.x) / rxs;
-  return { x: P.x + t*R.x, y: P.y + t*R.y };
-}
-
-// expande una lista de puntos (tramos axis/diag) a puntos cada GRID (denso)
 function densifyRoute(routePts){
   const out = [];
   for(let i=0;i<routePts.length;i++){
@@ -306,20 +435,24 @@ function densifyRoute(routePts){
     let cx = p.x, cy = p.y;
     for(let k=0;k<steps;k++){
       cx += sx; cy += sy;
-      const last = out[out.length-1];
-      if(!last || last.x!==cx || last.y!==cy) out.push({x:cx,y:cy});
+      if(dist(out[out.length-1], {x:cx, y:cy}) > 0.5) out.push({x:cx,y:cy});
     }
   }
   return out;
 }
 
-// comprime puntos colineales consecutivos para reducir polyline (manteniendo esquinas)
+/* ========= CHUNKS Y CORREDORES ========= */
+function chunkKey(p, q){
+  const ax = p.x, ay = p.y, bx = q.x, by = q.y;
+  if (ax < bx || (ax === bx && ay <= by)) return `${ax},${ay}|${bx},${by}`;
+  return `${bx},${by}|${ax},${ay}`;
+}
+
 function compressColinear(pts){
   if(pts.length<=2) return pts;
   const out = [pts[0]];
   for(let i=1;i<pts.length-1;i++){
-    const a = out[out.length-1], b = pts[i], c = pts[i+1];
-    const abx=b.x-a.x, aby=b.y-a.y, bcx=c.x-b.x, bcy=c.y-b.y;
+    const a = out[out.length-1], b = pts[i], c = pts[i+1], abx=b.x-a.x, aby=b.y-a.y, bcx=c.x-b.x, bcy=c.y-b.y;
     if(abx*bcy - aby*bcx === 0) continue;
     out.push(b);
   }
@@ -327,266 +460,193 @@ function compressColinear(pts){
   return out;
 }
 
-/* ========= MOTOR DE RUTAS ========= */
-
-function calculateRoute(p1, p2, influencePt){
-  const A = { x: p1.x, y: p1.y };
-  const B = { x: p2.x, y: p2.y };
-  const dx = B.x - A.x, dy = B.y - A.y;
-  const adx = Math.abs(dx), ady = Math.abs(dy);
-
-  if(adx < 0.5 || ady < 0.5) return [A, B];
-  if(Math.abs(adx - ady) < 0.5) return [A, B];
-
-  const sx = Math.sign(dx), sy = Math.sign(dy);
-  const diag = Math.min(adx, ady);
-  const extra = Math.abs(adx - ady);
-  const dom = (adx > ady) ? 'x' : 'y';
-
-  let pre = extra / 2;
-  if(influencePt){
-    if(dom === 'x'){
-      const prog = (influencePt.x - A.x) * sx;
-      pre = prog - diag / 2;
-    } else {
-      const prog = (influencePt.y - A.y) * sy;
-      pre = prog - diag / 2;
-    }
-  }
-  pre = snapLen(pre);
-  pre = clamp(pre, 0, extra);
-  const post = extra - pre;
-
-  const pts = [A];
-  const pushIfNew = (p) => {
-    const last = pts[pts.length-1];
-    if(!last || Math.abs(last.x - p.x) > 0.5 || Math.abs(last.y - p.y) > 0.5) pts.push(p);
-  };
-
-  if(dom === 'x'){
-    const P1 = { x: A.x + sx*pre,      y: A.y };
-    const P2 = { x: P1.x + sx*diag,    y: P1.y + sy*diag };
-    const P3 = { x: P2.x + sx*post,    y: P2.y };
-    pushIfNew(P1); pushIfNew(P2); pushIfNew(P3);
-  } else {
-    const P1 = { x: A.x,               y: A.y + sy*pre };
-    const P2 = { x: P1.x + sx*diag,    y: P1.y + sy*diag };
-    const P3 = { x: P2.x,              y: P2.y + sy*post };
-    pushIfNew(P1); pushIfNew(P2); pushIfNew(P3);
-  }
-  pushIfNew(B);
-  return pts;
-}
-
-/* ========= CORREDORES: SOLO EN TROZOS COMPARTIDOS DEL GRID =========
-   + referencia de dirección por chunk (evita el “flip” NE/SW que causa trenzado)
-*/
-
 function buildCorridors(){
-  const map = {};
-  const refs = {}; // key -> {dx,dy} (dirección de referencia real)
-
+  const map = {}, refs = {}; 
   for(const line of lines){
     if(!line.nodes || line.nodes.length<2) continue;
-    if(!line.bends) line.bends = {};
-
     for(let i=0;i<line.nodes.length-1;i++){
       const a = stopById(line.nodes[i]), b = stopById(line.nodes[i+1]);
       if(!a || !b) continue;
-
       const bendKey = [a.id, b.id].sort().join('-');
-      const influence = line.bends[bendKey] || { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
-      const route = calculateRoute(a, b, influence);
-      const dense = densifyRoute(route);
-
+      let influence = (line.bends && line.bends[bendKey]) || { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+      if (isNaN(influence.x) || isNaN(influence.y)) influence = { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+      const dense = densifyRoute(calculateRoute(a, b, influence));
       for(let k=0;k<dense.length-1;k++){
-        const p = dense[k], q = dense[k+1];
-        const key = chunkKey(p,q);
-
+        const p = dense[k], q = dense[k+1], key = chunkKey(p,q);
         if(!map[key]) map[key] = [];
         if(!map[key].includes(line.id)) map[key].push(line.id);
-
-        // fija referencia SOLO la primera vez que vemos este chunk,
-        // usando la dirección REAL p->q (no el orden canónico x/y).
         if(!refs[key]) refs[key] = { dx: q.x - p.x, dy: q.y - p.y };
       }
     }
   }
-
-  // aplica orden guardado por chunkKey
   for(const key in map){
-    const ids = map[key];
     if(corridorOrders[key]){
-      const saved = corridorOrders[key].filter(id => ids.includes(id));
-      const extra = ids.filter(id => !saved.includes(id));
+      const saved = corridorOrders[key].filter(id => map[key].includes(id));
+      const extra = map[key].filter(id => !saved.includes(id));
       map[key] = [...saved, ...extra];
     }
   }
-
   return { map, refs };
 }
 
-// offset para un CHUNK concreto:
-// - base depende del índice en corridorOrders (orden)
-// - flip depende de si este tramo p->q va en sentido opuesto a la ref del chunk
-//   (esto arregla el trenzado en giros NE/SW porque ya no cambia “el lado” al girar)
 function getCorridorInfoChunk(lineId, p, q, corridorsMap, refs){
-  const key = chunkKey(p,q);
-  const corridor = corridorsMap?.[key];
+  const key = chunkKey(p,q), corridor = corridorsMap?.[key];
   if(!corridor || corridor.length < 2) return { offset: 0, count: 1, index: 0, key, flip: 1 };
-
-  const n = corridor.length;
-  const idx = corridor.indexOf(lineId);
-  if(idx === -1) return { offset: 0, count: 1, index: 0, key, flip: 1 };
-
-  const base = (idx - (n - 1)/2) * LINE_SPACING;
-
-  const ref = refs?.[key];
-  let flip = 1;
-  if(ref){
-    const dx = q.x - p.x, dy = q.y - p.y;
-    const dot = dx*ref.dx + dy*ref.dy;
-    if(dot < 0) flip = -1;
-  }
-  // devolver offset ya con flip (así la normal puede ser la normal de viaje sin “twists”)
+  const n = corridor.length, idx = corridor.indexOf(lineId), base = (idx - (n - 1)/2) * LINE_SPACING, ref = refs?.[key];
+  let flip = 1; if(ref && ( (q.x - p.x)*ref.dx + (q.y - p.y)*ref.dy ) < 0) flip = -1;
   return { offset: base * flip, count: n, index: idx, key, flip };
 }
 
-/* ========= BUILD PATH: SIN “CURVAS” + SIN TRENZADO EN NE/SW =========
-   - Offset por chunk real (solo donde coincide el camino del grid)
-   - Lado estable usando refs (evita flip raro en vertical/diagonal)
-   - Uniones por intersección (miter) o bisel recto si paralelas / miter enorme
-*/
+function stopVisualPointsForHit(s, corridorsObj){
+  const pts = [{ x: s.x, y: s.y }];
+  const style = s.style || 'standard';
+  const stopLines = lines.filter(l => l.nodes.includes(s.id));
+  if(style === 'side-square' && stopLines.length > 0){
+    const l = stopLines[0], idx = l.nodes.indexOf(s.id), p = s, pN = stopById(l.nodes[idx+1]), pP = stopById(l.nodes[idx-1]);
+    const dir = pN ? {x:pN.x-p.x, y:pN.y-p.y} : (pP ? {x:p.x-pP.x, y:p.y-pP.y} : {x:1, y:0});
+    const n = getNormal({x:0,y:0}, dir);
+    pts.push({ x: s.x + n.x*12, y: s.y + n.y*12 });
+  }
+  else if(style === 'inline-dot' && stopLines.length > 0){
+    if(!corridorsObj) corridorsObj = buildCorridors();
+    for(const l of stopLines){
+      const idx = l.nodes.indexOf(s.id), pN = stopById(l.nodes[idx+1]), pP = stopById(l.nodes[idx-1]), pR = pN || pP;
+      if(!pR) continue;
+      const info = getCorridorInfoChunk(l.id, pN ? s : pP, pN ? pN : s, corridorsObj.map, corridorsObj.refs);
+      const n = getNormal({x:0,y:0}, {x:pR.x-s.x, y:pR.y-s.y});
+      pts.push({ x: s.x + n.x*info.offset, y: s.y + n.y*info.offset });
+    }
+  }
+  return pts;
+}
+
+function minDistToStopVisual(pos, s, corridorsObj){
+  let md = Infinity;
+  const pts = stopVisualPointsForHit(s, corridorsObj);
+  for(const p of pts) md = Math.min(md, Math.hypot(p.x - pos.x, p.y - pos.y));
+  return md;
+}
+
+function toggleStopOnLine(lineObj, sid, anchorA, anchorB, mousePos){
+  const nodes = lineObj.nodes, idx = nodes.indexOf(sid);
+  if(idx !== -1){
+    // REMOCIÓN (Veteado)
+    const prev = nodes[idx-1], next = nodes[idx+1];
+    lineObj.nodes = nodes.filter(x => x !== sid);
+    if(lineObj.bends) { 
+      if (prev && sid) delete lineObj.bends[[prev, sid].sort().join('-')];
+      if (sid && next) delete lineObj.bends[[sid, next].sort().join('-')];
+    }
+    return { a: (sid === anchorA) ? (prev || nodes[0]) : anchorA, b: (sid === anchorB) ? (next || nodes[nodes.length-1]) : anchorB, changed: true };
+  } else {
+    // INSERCIÓN
+    let aIdx = nodes.indexOf(anchorA), bIdx = nodes.indexOf(anchorB);
+    if(aIdx === -1 || bIdx === -1) { const hit = findNearestLinkOnLine(lineObj.id, mousePos); aIdx = hit.i; bIdx = hit.i + 1; anchorA = nodes[aIdx]; anchorB = nodes[bIdx]; }
+    const insertPos = Math.max(aIdx, bIdx);
+    nodes.splice(insertPos, 0, sid);
+    const distA = dist(mousePos, stopById(anchorA)), distB = dist(mousePos, stopById(anchorB));
+    return (distA < distB) ? { a: anchorA, b: sid, changed: true } : { a: sid, b: anchorB, changed: true };
+  }
+}
+
+function cleanUpLine(l){
+  if(!l || !l.nodes) return;
+  // Dedup consecutive
+  for(let i=l.nodes.length-1; i>0; i--){
+    if(l.nodes[i] === l.nodes[i-1]) l.nodes.splice(i, 1);
+  }
+  // Ensure min length
+  if(l.nodes.length < 2) {
+    lines = lines.filter(line => line.id !== l.id);
+    return;
+  }
+  // Clean orphans bends
+  if(l.bends){
+    const valid = new Set();
+    for(let i=0; i<l.nodes.length-1; i++){
+      const k = [l.nodes[i], l.nodes[i+1]].sort().join('-');
+      valid.add(k);
+    }
+    for(const k in l.bends){
+      if(!valid.has(k)) delete l.bends[k];
+    }
+  }
+}
+
+function ensureSpatialConsistency() {
+  let changed = false;
+  lines.forEach(l => {
+    const newNodes = [l.nodes[0]];
+    for (let i = 0; i < l.nodes.length - 1; i++) {
+      const a = stopById(l.nodes[i]), b = stopById(l.nodes[i+1]);
+      if (!a || !b) continue;
+      const bendKey = [a.id, b.id].sort().join('-');
+      let influence = (l.bends && l.bends[bendKey]) || { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+      if (isNaN(influence.x) || isNaN(influence.y)) influence = { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+      const routePts = densifyRoute(calculateRoute(a, b, influence));
+      const candidates = stops.filter(s =>
+        s.id !== a.id && s.id !== b.id &&
+        !l.nodes.includes(s.id) &&
+        routePts.some(p => dist(s, p) < 1.0)
+      );
+      candidates.sort((s1, s2) => dist(a, s1) - dist(a, s2));
+      candidates.forEach(c => newNodes.push(c.id));
+      newNodes.push(b.id);
+      if (candidates.length > 0) changed = true;
+    }
+    if (newNodes.length !== l.nodes.length) { l.nodes = newNodes; changed = true; }
+  });
+  if (changed) render.refresh();
+}
 
 function buildLinePath(lineObj, nodeIds, corridorsObj){
   if(!nodeIds || nodeIds.length < 2) return [];
-  if(!lineObj.bends) lineObj.bends = {};
-
-  const corridorsMap = corridorsObj?.map || null;
-  const refs = corridorsObj?.refs || null;
-
-  // 1) ruta base densificada por GRID (sin offset)
   const basePts = [];
   for(let i=0;i<nodeIds.length-1;i++){
     const a = stopById(nodeIds[i]), b = stopById(nodeIds[i+1]);
     if(!a || !b) continue;
-
     const bendKey = [a.id, b.id].sort().join('-');
-    let influence = lineObj.bends[bendKey] || { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
-
-    const isEditing =
-      gesture.active && gesture.mode === 'segment' && gesture.corridorDragMode === 'insert' &&
-      gesture.lid === lineObj.id &&
-      ((gesture.anchorA === a.id && gesture.anchorB === b.id) || (gesture.anchorA === b.id && gesture.anchorB === a.id));
-
-    if(isEditing && gesture.moved){
-      influence = appState.mouseRaw;
-      lineObj.bends[bendKey] = { x: influence.x, y: influence.y };
+    let influence = (lineObj.bends && lineObj.bends[bendKey]) || { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+    if(gesture.active && gesture.mode === 'segment' && gesture.lid === lineObj.id && gesture.moved){
+      if((gesture.anchorA === a.id && gesture.anchorB === b.id) || (gesture.anchorA === b.id && gesture.anchorB === a.id)) influence = appState.mouseRaw;
     }
-
     const route = calculateRoute(a, b, influence);
     const dense = densifyRoute(route);
-
-    for(let k=0;k<dense.length;k++){
-      const p = dense[k];
-      const last = basePts[basePts.length-1];
-      if(!last || last.x!==p.x || last.y!==p.y) basePts.push(p);
-    }
+    for(const p of dense) if(!basePts.length || dist(basePts[basePts.length-1], p) > 0.5) basePts.push(p);
   }
   if(basePts.length < 2) return [];
-
-  // 2) offsets por micro-segmento (chunk)
-  const offs = [];
-  const norms = [];
+  const offs = [], norms = [];
   for(let i=0;i<basePts.length-1;i++){
-    const p = basePts[i], q = basePts[i+1];
-    const info = corridorsMap ? getCorridorInfoChunk(lineObj.id, p, q, corridorsMap, refs) : { offset: 0 };
-    offs[i] = info.offset || 0;
-    // normal de VIAJE (p->q). El offset ya lleva el flip, así NO hay “twist” al girar.
-    norms[i] = getNormal(p, q);
+    offs[i] = (corridorsObj ? getCorridorInfoChunk(lineObj.id, basePts[i], basePts[i+1], corridorsObj.map, corridorsObj.refs).offset : 0);
+    norms[i] = getNormal(basePts[i], basePts[i+1]);
   }
-
-  const out = [];
-  const push = (pt) => {
-    const last = out[out.length-1];
-    if(!last || Math.abs(last.x-pt.x)>0.01 || Math.abs(last.y-pt.y)>0.01) out.push(pt);
-  };
-
-  // start
-  {
-    const p0 = basePts[0];
-    const n0 = norms[0];
-    const o0 = offs[0] || 0;
-    push({ x: p0.x + n0.x*o0, y: p0.y + n0.y*o0 });
-  }
-
-  // vertices
+  const out = []; const push = (pt) => { if(!out.length || dist(out[out.length-1], pt) > 0.01) out.push(pt); };
+  push({ x: basePts[0].x + norms[0].x*offs[0], y: basePts[0].y + norms[0].y*offs[0] });
   for(let i=1;i<basePts.length-1;i++){
-    const pPrev = basePts[i-1], p = basePts[i], pNext = basePts[i+1];
-
-    const offPrev = offs[i-1] || 0;
-    const offNext = offs[i] || 0;
-
-    const nPrev = norms[i-1];
-    const nNext = norms[i];
-
-    // puntos “anclaje” en el vértice para cada recta offset
-    const A = { x: p.x + nPrev.x*offPrev, y: p.y + nPrev.y*offPrev };
-    const B = { x: p.x + nNext.x*offNext, y: p.y + nNext.y*offNext };
-
-    // direcciones de cada segmento (no unitarias)
-    const d1 = { x: p.x - pPrev.x, y: p.y - pPrev.y };
-    const d2 = { x: pNext.x - p.x, y: pNext.y - p.y };
-
-    // si los offsets son “casi iguales”, el miter normal va perfecto y no cruza
-    // si son distintos, también usamos intersección (esquina normal) SIN transiciones “curvas”.
-    const I = lineLineIntersection(A, d1, B, d2);
-
-    if(I){
-      // recorta miters absurdos (esto evita picos que pueden parecer “trenzado” en diagonales)
-      const lim = Math.max(Math.abs(offPrev), Math.abs(offNext), LINE_SPACING) * MITER_LIMIT;
-      const dI = dist(I, p);
-      if(dI <= lim){
-        push(I);
-      }else{
-        // fallback: bisel recto (sigue siendo “como el resto”: líneas rectas, sin curvar)
-        push(A);
-        push(B);
-      }
-    }else{
-      // paralelas/colineales: conecta con bisel (recto, sin curva)
-      push(A);
-      push(B);
-    }
+    const A = { x: basePts[i].x + norms[i-1].x*offs[i-1], y: basePts[i].y + norms[i-1].y*offs[i-1] },
+          B = { x: basePts[i].x + norms[i].x*offs[i], y: basePts[i].y + norms[i].y*offs[i] },
+          d1 = { x: basePts[i].x - basePts[i-1].x, y: basePts[i].y - basePts[i-1].y }, 
+          d2 = { x: basePts[i+1].x - basePts[i].x, y: basePts[i+1].y - basePts[i].y }, rxs = d1.x*d2.y - d1.y*d2.x;
+    if(Math.abs(rxs) > 1e-9){
+      const QmP = { x: B.x - A.x, y: B.y - A.y }, t = (QmP.x*d2.y - QmP.y*d2.x) / rxs;
+      const I = { x: A.x + t*d1.x, y: A.y + t*d1.y };
+      if(dist(I, basePts[i]) <= Math.max(Math.abs(offs[i-1]), Math.abs(offs[i]), LINE_SPACING) * MITER_LIMIT) push(I);
+      else { push(A); push(B); }
+    } else { push(A); push(B); }
   }
-
-  // end
-  {
-    const pn_1 = basePts[basePts.length-2];
-    const pn = basePts[basePts.length-1];
-    const nL = norms[norms.length-1];
-    const oL = offs[offs.length-1] || 0;
-    push({ x: pn.x + nL.x*oL, y: pn.y + nL.y*oL });
-  }
-
+  const lIdx = basePts.length - 1;
+  push({ x: basePts[lIdx].x + norms[lIdx-1].x*offs[lIdx-1], y: basePts[lIdx].y + norms[lIdx-1].y*offs[lIdx-1] });
   return compressColinear(out);
 }
 
-/* ========= UTILIDADES PARA SELECCIÓN DE TRAMOS ========= */
-
 function findNearestLinkOnLine(lid, pos){
   const l = lineById(lid); if(!l || l.nodes.length<2) return null;
-  const corridorsObj = buildCorridors();
-  const pts = buildLinePath(l, l.nodes, corridorsObj);
-  if(pts.length<2) return null;
-
+  const pts = buildLinePath(l, l.nodes, buildCorridors());
   let best = { i: 0, d: Infinity };
   for(let k = 0; k < pts.length - 1; k++){
     const d = distPointToSeg(pos, pts[k], pts[k+1]);
     if(d < best.d) best = { i: k, d };
   }
-
-  // nodeIdx para insertar (como antes)
   let nodeIdx = 0, minDist = Infinity;
   for(let i=0; i<l.nodes.length-1; i++){
     const a = stopById(l.nodes[i]), b = stopById(l.nodes[i+1]);
@@ -594,370 +654,478 @@ function findNearestLinkOnLine(lid, pos){
     const dNode = distPointToSeg(pos, a, b);
     if(dNode < minDist) { minDist = dNode; nodeIdx = i; }
   }
-
   return { i: nodeIdx, d: best.d };
 }
 
-// chunk base más cercano (para reordenado real por corredor)
-function findNearestChunkOnLine(lid, pos){
-  const l = lineById(lid); if(!l || l.nodes.length<2) return null;
-  if(!l.bends) l.bends = {};
-  const corridorsObj = buildCorridors();
-  const corridorsMap = corridorsObj.map;
+// Nueva función global para calcular extensiones
+function getLinePathWithExtensions(l, corridorsObj) {
+    const pts = buildLinePath(l, l.nodes, corridorsObj);
+    if (pts.length < 2) return null;
 
-  // reconstruimos base densificada (sin offset)
-  const basePts = [];
-  for(let i=0;i<l.nodes.length-1;i++){
-    const a = stopById(l.nodes[i]), b = stopById(l.nodes[i+1]);
-    if(!a || !b) continue;
-    const bendKey = [a.id, b.id].sort().join('-');
-    const influence = l.bends[bendKey] || { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
-    const dense = densifyRoute(calculateRoute(a,b,influence));
-    for(const p of dense){
-      const last = basePts[basePts.length-1];
-      if(!last || last.x!==p.x || last.y!==p.y) basePts.push(p);
-    }
-  }
-  if(basePts.length<2) return null;
+    const startVec = { x: pts[0].x - pts[1].x, y: pts[0].y - pts[1].y };
+    const startLen = Math.hypot(startVec.x, startVec.y) || 1;
+    const startDir = { x: startVec.x/startLen, y: startVec.y/startLen };
 
-  let best = { d: Infinity, a:null, b:null, key:null, hasCorridor:false };
-  for(let i=0;i<basePts.length-1;i++){
-    const p = basePts[i], q = basePts[i+1];
-    const d = distPointToSeg(pos, p, q);
-    if(d < best.d){
-      const key = chunkKey(p,q);
-      best = { d, a:p, b:q, key, hasCorridor: (corridorsMap[key] && corridorsMap[key].length>1) };
-    }
-  }
-  return best;
+    const endIdx = pts.length - 1;
+    const endVec = { x: pts[endIdx].x - pts[endIdx-1].x, y: pts[endIdx].y - pts[endIdx-1].y };
+    const endLen = Math.hypot(endVec.x, endVec.y) || 1;
+    const endDir = { x: endVec.x/endLen, y: endVec.y/endLen };
+
+    const extLen = GRID * 0.7; // AJUSTADO A 0.7
+    const pStartExt = { x: pts[0].x + startDir.x * extLen, y: pts[0].y + startDir.y * extLen };
+    const pEndExt = { x: pts[endIdx].x + endDir.x * extLen, y: pts[endIdx].y + endDir.y * extLen };
+
+    return { pts, pStartExt, pEndExt, startDir, endDir };
 }
 
-function findEndpointAtStop(stopId){
-  const list = appState.selectedLineId ? [lineById(appState.selectedLineId), ...lines] : lines;
-  for(const l of list){
-    if(!l || !l.nodes || l.nodes.length<1) continue;
-    if(l.nodes[0] === stopId) return { lid:l.id, end:'start' };
-    if(l.nodes[l.nodes.length-1] === stopId) return { lid:l.id, end:'end' };
+/* ========= APP LOGIC ========= */
+const app = {
+  updateStopName(v) { if(appState.popupStopId) { stopById(appState.popupStopId).name = v; render.renderStops(); } },
+  updateStopFont(f, el) { if(appState.popupStopId) { stopById(appState.popupStopId).font = f; document.querySelectorAll('.font-opt').forEach(o => o.classList.remove('active')); el.classList.add('active'); render.renderStops(); } },
+  updateStopStyle(s, el) { if(appState.popupStopId) { stopById(appState.popupStopId).style = s; document.querySelectorAll('.style-opt').forEach(o => o.classList.remove('active')); el.classList.add('active'); render.renderStops(); } },
+  showStopPopup(sid, sx, sy) {
+    const s = stopById(sid); if(!s) return; appState.popupStopId = sid; const p = $('stop-popup'); p.style.display = 'block';
+    $('popup-stop-name').value = s.name || ""; document.querySelectorAll('.font-opt, .style-opt').forEach(o => o.classList.remove('active'));
+    const font = s.font || 'sans-serif', style = s.style || 'standard';
+    document.querySelector(`.style-opt[title="${style==='standard'?'Estándar':style==='side-square'?'Lateral':'Integrado'}"]`)?.classList.add('active');
+    const stopLines = lines.filter(l => l.nodes.includes(sid));
+    $('popup-stop-lines').innerHTML = stopLines.length ? stopLines.map(l => `<span class="line-tag shadow-sm" style="background:${l.color}"></span>`).join('') : '<span class="text-[10px] text-gray-400">Sin líneas</span>';
+    const px = Math.min(sx + 15, window.innerWidth - 260), py = Math.min(sy + 15, window.innerHeight - 350); p.style.left = px + 'px'; p.style.top = py + 'px';
+  },
+  hideStopPopup() { $('stop-popup').style.display = 'none'; appState.popupStopId = null; },
+  deleteCurrentStop() { if(appState.popupStopId){ const id = appState.popupStopId; lines.forEach(l => l.nodes = l.nodes.filter(n => n !== id)); lines = lines.filter(l => l.nodes.length >= 2); stops = stops.filter(st => st.id !== id); this.hideStopPopup(); render.refresh(); } },
+  
+  selectLine(id) {
+    appState.selectedLineId = id;
+    render.drawMap();
+    render.drawUI();
+  },
+  updateLineName(id, val) {
+    const l = lineById(id);
+    if(l) l.name = val;
+  },
+  updateLineColor(id, val) {
+    const l = lineById(id);
+    if(l) { l.color = val; render.drawMap(); }
   }
-  return null;
-}
+};
 
 /* ========= RENDER ========= */
 const render = {
-  refresh(){
-    this.renderLines();
-    this.renderStops();
-    this.renderHandles();
-    this.renderUI();
-    this.renderGhost();
+  refresh(){ this.drawMap(); }, 
+
+  drawMap(){ 
+      this.renderLines(); 
+      this.renderStops(); 
+      this.renderHandles(); 
+      this.renderGhost(); 
+  },
+
+  drawUI(){
+    const panel = $('ui-panel');
+    panel.innerHTML = lines.map((l,i) => {
+      const isSel = appState.selectedLineId === l.id;
+      const name = l.name || `Línea ${i+1}`;
+      if(isSel){
+        return `
+        <div class="line-card active flex items-center p-3 rounded-2xl gap-3 bg-white ring-2 ring-blue-500 shadow-lg transition-all transform scale-[1.02]">
+          <div class="relative w-8 h-8 flex-shrink-0">
+             <div class="absolute inset-0 rounded-full shadow-inner ring-1 ring-black/10 transition-colors" style="background:${l.color}"></div>
+             <input type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value="${l.color}" oninput="app.updateLineColor('${l.id}', this.value)">
+          </div>
+          <input type="text" class="flex-1 font-bold text-gray-800 bg-transparent border-b-2 border-blue-100 focus:border-blue-500 outline-none px-1 py-0.5 transition-colors" value="${name}" oninput="app.updateLineName('${l.id}', this.value)" placeholder="Nombre de línea">
+        </div>`;
+      } else {
+        return `
+        <div class="line-card flex items-center p-3 rounded-2xl gap-4 cursor-pointer bg-white border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all" onclick="app.selectLine('${l.id}')">
+          <div class="w-6 h-6 rounded-full shadow-inner ring-1 ring-black/5" style="background:${l.color}"></div>
+          <span class="text-sm font-bold text-gray-700 truncate select-none">${name}</span>
+        </div>`;
+      }
+    }).join('');
   },
 
   renderLines(){
-    const layer = $('lines-layer'), edit = $('edit-layer');
+    const layer = $('lines-layer'), edit = $('edit-layer'), drawing = gesture.active && gesture.lid && (gesture.mode === 'extend' || gesture.mode === 'newLine'), corridorsObj = buildCorridors();
     layer.innerHTML = ''; edit.innerHTML = '';
-    const drawing = gesture.active && gesture.lid && (gesture.mode === 'extend');
-    const corridorsObj = buildCorridors();
+    const activeLid = gesture.lid || appState.selectedLineId;
+
+    const drawLineWithExtensions = (l, isGhost) => {
+        const nodesToUse = (isGhost && gesture.mode === 'newLine' && gesture.liveNodes.length) ? gesture.liveNodes : l.nodes;
+        const pts = buildLinePath(l, nodesToUse, corridorsObj);
+        if (pts.length < 2) return;
+
+        const startVec = { x: pts[0].x - pts[1].x, y: pts[0].y - pts[1].y };
+        const startLen = Math.hypot(startVec.x, startVec.y) || 1;
+        const startDir = { x: startVec.x/startLen, y: startVec.y/startLen };
+
+        const endIdx = pts.length - 1;
+        const endVec = { x: pts[endIdx].x - pts[endIdx-1].x, y: pts[endIdx].y - pts[endIdx-1].y };
+        const endLen = Math.hypot(endVec.x, endVec.y) || 1;
+        const endDir = { x: endVec.x/endLen, y: endVec.y/endLen };
+
+        const extLen = GRID * 0.7; // AJUSTADO A 0.7
+        const pStartExt = { x: pts[0].x + startDir.x * extLen, y: pts[0].y + startDir.y * extLen };
+        const pEndExt = { x: pts[endIdx].x + endDir.x * extLen, y: pts[endIdx].y + endDir.y * extLen };
+
+        const createTBar = (pt, dir, className) => {
+            const barW = 20; 
+            const perp = { x: -dir.y, y: dir.x };
+            const p1 = { x: pt.x + perp.x * barW/2, y: pt.y + perp.y * barW/2 };
+            const p2 = { x: pt.x - perp.x * barW/2, y: pt.y - perp.y * barW/2 };
+            const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+            attr(line, { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke: l.color, "stroke-width": LINE_WIDTH, "stroke-linecap": "round", class: className + " path" });
+            return line;
+        };
+
+        const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        group.classList.add('line-group');
+        
+        const allPts = [pStartExt, ...pts, pEndExt];
+        const pl = document.createElementNS("http://www.w3.org/2000/svg","polyline");
+        
+        const applyClasses = (el) => {
+            el.classList.add('path');
+            if(isGhost) el.classList.add('dim');
+            else {
+                if(activeLid && activeLid !== l.id) el.classList.add('dimmed');
+                if(gesture.active && gesture.mode === 'segment' && gesture.lid === l.id) el.classList.add('editing-focus');
+            }
+        };
+
+        applyClasses(pl);
+        attr(pl,{ points: pointsToAttr(allPts), stroke: l.color, 'stroke-width': LINE_WIDTH, 'data-lid': l.id });
+        group.appendChild(pl);
+        
+        const tStart = createTBar(pStartExt, startDir, 'line-tbar');
+        const tEnd = createTBar(pEndExt, endDir, 'line-tbar');
+        applyClasses(tStart);
+        applyClasses(tEnd);
+        group.appendChild(tStart);
+        group.appendChild(tEnd);
+
+        const container = isGhost ? edit : layer;
+        container.appendChild(group);
+    };
 
     for(const l of lines){
-      if(l.nodes.length < 2) continue;
       if(drawing && l.id === gesture.lid) continue;
-      const pts = buildLinePath(l, l.nodes, corridorsObj);
-      if (pts.length < 2) continue;
-      const pl = document.createElementNS("http://www.w3.org/2000/svg","polyline");
-      pl.classList.add('path');
-      if(appState.selectedLineId === l.id) pl.classList.add('sel');
-      if(gesture.mode === 'segment' && gesture.corridorDragMode === 'reorder' && gesture.lid === l.id) pl.classList.add('reordering');
-      attr(pl,{ points: pointsToAttr(pts), stroke: l.color, 'stroke-width': LINE_WIDTH, 'data-lid': l.id });
-      layer.appendChild(pl);
+      drawLineWithExtensions(l, false);
     }
-
+    
     if(drawing){
       const l = lineById(gesture.lid);
-      const pl = document.createElementNS("http://www.w3.org/2000/svg","polyline");
-      pl.classList.add('path','dim');
-      attr(pl,{ points: pointsToAttr(buildLinePath(l, gesture.originalLineNodes, corridorsObj)), stroke: l.color, 'stroke-width': LINE_WIDTH });
-      edit.appendChild(pl);
+      if(l){ } 
     }
   },
 
   renderStops(){
     const layer = $('stops-layer'); layer.innerHTML = '';
-    let selNodes = gesture.active && gesture.mode !== 'segment' && gesture.liveNodes?.length
-      ? new Set(gesture.liveNodes) : new Set(lineById(gesture.lid || appState.selectedLineId)?.nodes || []);
-
+    const corridorsObj = buildCorridors();
+    const editedLine = (gesture.active && gesture.lid) ? lineById(gesture.lid) : (appState.selectedLineId ? lineById(appState.selectedLineId) : null);
+    const editedNodes = editedLine ? new Set(editedLine.nodes) : new Set();
+    const activeNodes = (gesture.active && gesture.mode !== 'segment') ? new Set(gesture.liveNodes) : new Set();
     stops.forEach(s => {
       const g = document.createElementNS("http://www.w3.org/2000/svg","g");
       g.id = s.id; g.classList.add('stop');
-      if(selNodes.has(s.id)) g.classList.add('onSel');
+      if(activeNodes.has(s.id)) g.classList.add('onSel');
       if(gesture.hoverStopId === s.id) g.classList.add('hover');
       const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
-      ring.classList.add('stop-ring'); attr(ring,{cx:s.x, cy:s.y, r:16});
-      const shape = document.createElementNS("http://www.w3.org/2000/svg","circle");
-      shape.classList.add('stop-shape'); attr(shape,{cx:s.x, cy:s.y, r:13.5});
-      const hit = document.createElementNS("http://www.w3.org/2000/svg","circle");
-      attr(hit,{cx:s.x, cy:s.y, r:22, fill:"transparent"});
-      g.append(ring, shape, hit); layer.appendChild(g);
+      ring.classList.add('stop-ring'); attr(ring,{cx:s.x, cy:s.y, r:18});
+      if (editedNodes.has(s.id) && !gesture.touchedStops.has(s.id)) { g.classList.add('in-edited-line'); ring.style.stroke = editedLine.color; }
+      g.appendChild(ring);
+      const style = s.style || 'standard', stopLines = lines.filter(l => l.nodes.includes(s.id));
+      if(style === 'side-square' && stopLines.length > 0){
+        const l = stopLines[0], p = s, pN = stopById(l.nodes[l.nodes.indexOf(s.id)+1]), pP = stopById(l.nodes[l.nodes.indexOf(s.id)-1]);
+        const dir = pN ? {x:pN.x-p.x, y:pN.y-p.y} : (pP ? {x:p.x-pP.x, y:p.y-pP.y} : {x:1, y:0}), n = getNormal({x:0,y:0}, dir), shape = document.createElementNS("http://www.w3.org/2000/svg","rect");
+        attr(shape, { x: s.x + n.x*12 - 6, y: s.y + n.y*12 - 6, width: 12, height: 12, rx: 2, fill: l.color, class: 'stop-side-square' });
+        g.appendChild(shape);
+      } else if(style === 'inline-dot'){
+        if (stopLines.length > 0) {
+          stopLines.forEach(l => {
+            const pN = stopById(l.nodes[l.nodes.indexOf(s.id)+1]), pP = stopById(l.nodes[l.nodes.indexOf(s.id)-1]), pR = pN || pP; if(!pR) return;
+            const info = getCorridorInfoChunk(l.id, pN?s:pP, pN?pN:s, corridorsObj.map, corridorsObj.refs), n = getNormal({x:0,y:0}, {x:pR.x-s.x, y:pR.y-s.y}), dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+            attr(dot, { cx: s.x + n.x*info.offset, cy: s.y + n.y*info.offset, r: 4.5, class: 'stop-inline-dot' }); g.appendChild(dot);
+          });
+        } else {
+          const dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+          attr(dot, { cx: s.x, cy: s.y, r: 4, class: 'stop-orphan-dot' });
+          g.appendChild(dot);
+        }
+      } else {
+        const shape = document.createElementNS("http://www.w3.org/2000/svg","circle"); attr(shape,{cx:s.x, cy:s.y, r:13.5, class: 'stop-shape'}); g.appendChild(shape);
+      }
+      const hit = document.createElementNS("http://www.w3.org/2000/svg","circle"); attr(hit,{cx:s.x, cy:s.y, r:22, fill:"transparent"}); g.appendChild(hit);
+      if (s.name) {
+        const txt = document.createElementNS("http://www.w3.org/2000/svg","text"); txt.classList.add('stop-label'); txt.textContent = s.name;
+        const f = s.font || 'sans-serif'; if (f === 'serif') txt.style.fontFamily = 'serif'; else if (f === 'monospace') txt.style.fontFamily = 'monospace'; else if (f === 'bold') txt.style.fontWeight = '800'; else if (f === 'italic') txt.style.fontStyle = 'italic';
+        attr(txt, { x: s.x + 20, y: s.y + 6 }); g.appendChild(txt);
+      }
+      layer.appendChild(g);
     });
   },
 
   renderHandles(){
     const layer = $('handles-layer'); layer.innerHTML = '';
-    const l = lineById(appState.selectedLineId);
-    if(!l || l.nodes.length<2 || gesture.active) return;
-    const corridorsObj = buildCorridors();
-    const pts = buildLinePath(l, l.nodes, corridorsObj);
-    if (pts.length < 2) return;
-    const mk = (p, toward, end) => {
-      const dx=p.x-toward.x, dy=p.y-toward.y, len=Math.hypot(dx,dy)||1, ux=dx/len, uy=dy/len, px=-uy, py=ux;
-      const cx=p.x+ux*12, cy=p.y+uy*12;
-      const line = document.createElementNS("http://www.w3.org/2000/svg","line");
-      attr(line,{x1:cx+px*12, y1:cy+py*12, x2:cx-px*12, y2:cy-py*12, stroke:l.color, 'stroke-width':10, class:'handle','data-lid':l.id,'data-end':end});
-      layer.appendChild(line);
-    };
-    mk(pts[0], pts[1], 'start');
-    mk(pts[pts.length-1], pts[pts.length-2], 'end');
+    const l = lineById(appState.selectedLineId); if(!l || l.nodes.length<2 || gesture.active) return;
   },
 
   renderUI(){
-    $('ui-panel').innerHTML = lines.map((l,i) => `
-      <div class="flex items-center p-2 rounded-xl gap-3 cursor-pointer ${appState.selectedLineId===l.id?'bg-blue-50 ring-1 ring-blue-200 shadow-sm' : 'bg-white border border-gray-100'}"
-           onclick="appState.selectedLineId='${l.id}';render.refresh()">
-        <div class="w-5 h-5 rounded-full" style="background:${l.color}"></div>
-        <span class="text-sm font-semibold text-gray-700">Línea ${i+1}</span>
-      </div>`).join('');
+    $('ui-panel').innerHTML = lines.map((l,i) => `<div class="line-card flex items-center p-3 rounded-2xl gap-4 cursor-pointer ${appState.selectedLineId===l.id?'bg-blue-600 text-white shadow-xl shadow-blue-200 ring-2 ring-blue-300' : 'bg-white border border-gray-100 hover:border-gray-300'}" onclick="appState.selectedLineId='${l.id}';render.refresh()"><div class="w-6 h-6 rounded-full shadow-inner" style="background:${l.color}"></div><span class="text-sm font-bold">Línea ${i+1}</span></div>`).join('');
   },
 
   renderGhost(){
-    const g = $('ghost'), sh = $('ghostShadow');
-    if(!gesture.active || gesture.mode === 'segment' || !gesture.liveNodes.length){
-      g.style.display = sh.style.display = 'none'; return;
-    }
-    const color = gesture.lid ? (lineById(gesture.lid)?.color || colors[0]) : colorForNew();
+    const g = $('ghost'), sh = $('ghostShadow'); if(!gesture.active || gesture.mode === 'segment' || !gesture.liveNodes.length){ g.style.display = sh.style.display = 'none'; return; }
+    const color = gesture.lid ? (lineById(gesture.lid)?.color || colors[0]) : (colors.find(c => !new Set(lines.map(l=>l.color)).has(c)) || colors[0]);
     $('app-svg').style.setProperty('--lc', color);
     let pts = buildLinePath({bends:{}}, gesture.liveNodes, null);
     if(gesture.tempPoint){
       const last = stopById(gesture.liveNodes[gesture.liveNodes.length-1]);
-      const route = calculateRoute(last, gesture.tempPoint, appState.mouseRaw);
-      route.shift(); pts = pts.concat(route);
+      if (last) {
+        const route = calculateRoute(last, gesture.tempPoint, appState.mouseRaw);
+        route.shift(); pts = pts.concat(route);
+      }
     }
-    const attrVal = pointsToAttr(pts);
-    g.style.display = sh.style.display = 'block'; g.setAttribute('points', attrVal); sh.setAttribute('points', attrVal);
+    const val = pointsToAttr(pts); g.style.display = sh.style.display = 'block'; g.setAttribute('points', val); sh.setAttribute('points', val);
   }
 };
 
 /* ========= INTERACCIÓN ========= */
-function colorForNew(){
-  const used = new Set(lines.map(l=>l.color));
-  return colors.find(c=>!used.has(c)) || colors[lines.length%colors.length];
-}
-
-function showCorridorHint(show) {
-  const hint = $('corridor-hint');
-  if (show) hint.classList.add('visible');
-  else hint.classList.remove('visible');
-}
-
-function toggleStationOnLineDuringInsert(l, sid){
-  if(!l || !sid || sid === gesture.anchorA || sid === gesture.anchorB) return;
-  const already = l.nodes.indexOf(sid);
-  if(already !== -1){
-    l.nodes = l.nodes.filter(x => x !== sid);
-    if(l.nodes.length < 2) lines = lines.filter(x => x.id !== l.id);
-    pulseStop(sid);
-  } else {
-    const insIdx = l.nodes.indexOf(gesture.anchorB);
-    l.nodes.splice(insIdx, 0, sid);
-    pulseStop(sid);
-  }
-}
-
 $('app-svg').addEventListener('pointerdown', e => {
-  if(e.button===1 || appState.space){ appState.panStart={x:e.clientX, y:e.clientY, vx:view.x, vy:view.y}; return; }
-  const pos = getMousePos(e), hStop = getStopNear(pos), hPath = e.target.closest('.path'), hCap = e.target.closest('.handle');
+  if (e.target.closest('#stop-popup')) return;
+  app.hideStopPopup();
+  if (e.button === 1 || appState.space) {
+    appState.panStart = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
+    return;
+  }
+
+  const pos = getMousePos(e);
+  const hStop = getStopNear(pos, 32); 
+  const hPath = e.target.closest('.path');
+  const hCap = e.target.closest('.handle');
 
   Object.assign(gesture, {
-    active: true, moved: false, startPt: pos,
-    lid: null, liveNodes: [], tempPoint: null,
-    anchorA: null, anchorB: null, lastAppliedHover: null,
-    originalLineNodes: [],
-    corridorDragMode: null, corridorOriginalOrder: [],
-    corridorChunkKey: null, corridorChunkA: null, corridorChunkB: null
+    active: true,
+    moved: false,
+    startTime: Date.now(),
+    startPt: pos,
+    startScreen: { x: e.clientX, y: e.clientY },
+    lid: null,
+    liveNodes: [],
+    tempPoint: null,
+    anchorA: null,
+    anchorB: null,
+    lastAppliedHover: null,
+    initialTargetStop: hStop ? hStop.id : null,
+    prevRaw: pos,
+    touchLatch: new Set(),
+    touchedStops: new Set()
   });
 
-  if(hCap){
-    const l = lineById(hCap.dataset.lid);
-    gesture.mode='extend'; gesture.lid=l.id; appState.selectedLineId = l.id;
-    gesture.liveNodes = hCap.dataset.end==='start' ? [...l.nodes].reverse() : [...l.nodes];
-    gesture.originalLineNodes = [...l.nodes];
-  } else if(hStop){
-    const ep = findEndpointAtStop(hStop.id);
-    if(ep){
-      gesture.mode='extend'; gesture.lid=ep.lid; appState.selectedLineId = ep.lid;
-      const l = lineById(ep.lid); gesture.liveNodes = ep.end==='start' ? [...l.nodes].reverse() : [...l.nodes];
-      gesture.originalLineNodes = [...l.nodes];
-    } else { gesture.mode='newLine'; gesture.liveNodes = [hStop.id]; }
-  } else if(hPath){
+  // 1. Check Line Extensions (High priority for T-bars)
+  let foundExt = false;
+  for (const l of lines) {
+    const info = getLinePathWithExtensions(l, buildCorridors());
+    if (info) {
+      // Check distance to the T-bar specifically or the extension segment
+      // FIX: Use generous radius for T-bar tip to prioritize over stop
+      const DIST_T_BAR = 24; 
+      const nearStart = dist(pos, info.pStartExt) < DIST_T_BAR;
+      const nearEnd = dist(pos, info.pEndExt) < DIST_T_BAR;
+      
+      const dStartSeg = distPointToSeg(pos, info.pStartExt, info.pts[0]);
+      const dEndSeg = distPointToSeg(pos, info.pts[info.pts.length - 1], info.pEndExt);
+      const EXT_HIT_DIST = 12;
+
+      let distToStartNode = Infinity;
+      let distToEndNode = Infinity;
+      if (l.nodes.length > 0) {
+          const sNode = stopById(l.nodes[0]);
+          if(sNode) distToStartNode = dist(pos, sNode);
+          const eNode = stopById(l.nodes[l.nodes.length-1]);
+          if(eNode) distToEndNode = dist(pos, eNode);
+      }
+
+      // Prioritize explicit T-bar hit or clear segment hit
+      if (nearStart || (dStartSeg < EXT_HIT_DIST && distToStartNode > 15)) {
+        gesture.mode = 'extend';
+        gesture.lid = l.id;
+        app.selectLine(l.id);
+        gesture.liveNodes = [...l.nodes].reverse(); // Extend from start
+        foundExt = true;
+        break;
+      }
+      if (nearEnd || (dEndSeg < EXT_HIT_DIST && distToEndNode > 15)) {
+        gesture.mode = 'extend';
+        gesture.lid = l.id;
+        app.selectLine(l.id);
+        gesture.liveNodes = [...l.nodes]; // Extend from end
+        foundExt = true;
+        break;
+      }
+    }
+  }
+
+  if (foundExt) {
+    render.drawMap();
+    return;
+  }
+
+  // 2. Check Stops (New Line branching)
+  if (hStop) {
+    gesture.mode = 'newLine';
+    gesture.liveNodes = [hStop.id];
+    render.drawMap();
+    return;
+  }
+
+  // 3. Check Handles (if visible)
+  if (hCap) {
+    // ...
+  }
+
+  // 4. Check Path (Segment Edit)
+  if (hPath) {
     const lid = hPath.dataset.lid;
     const hit = findNearestLinkOnLine(lid, pos);
-
-    if(hit && hit.d <= 22){
-      appState.selectedLineId = lid; gesture.mode = 'segment'; gesture.lid = lid;
+    app.selectLine(lid);
+    gesture.lid = lid;
+    if (hit) {
+      gesture.mode = 'segment';
       const l = lineById(lid);
       gesture.anchorA = l.nodes[hit.i];
       gesture.anchorB = l.nodes[hit.i + 1];
-      gesture.originalLineNodes = [...l.nodes];
+    }
+    render.drawMap();
+    return;
+  }
 
-      const nearestChunk = findNearestChunkOnLine(lid, pos);
-      if(nearestChunk && nearestChunk.hasCorridor){
-        gesture.corridorChunkKey = nearestChunk.key;
-        gesture.corridorChunkA = nearestChunk.a;
-        gesture.corridorChunkB = nearestChunk.b;
-        const corridorsObj = buildCorridors();
-        gesture.corridorOriginalOrder = [...(corridorsObj.map[gesture.corridorChunkKey]||[])];
-        showCorridorHint(true);
-      }
-    } else { appState.selectedLineId = lid; gesture.mode = 'select'; gesture.active = false; }
-  } else { gesture.mode='tapEmpty'; appState.selectedLineId = null; }
-
-  render.refresh();
+  // 5. Empty Click
+  gesture.mode = 'tapEmpty';
+  appState.panStart = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
+  // Don't deselect yet; wait for pointerup to see if it was a click or drag
+  render.drawMap();
 });
 
 $('app-svg').addEventListener('pointermove', e => {
   const pos = getMousePos(e); appState.mouseRaw = pos;
-
-  if(appState.panStart){
-    view.x = appState.panStart.vx - (e.clientX - appState.panStart.x)*(view.w/window.innerWidth);
-    view.y = appState.panStart.vy - (e.clientY - appState.panStart.y)*(view.h/window.innerHeight);
-    setView(); return;
-  }
+  if(gesture.active && !gesture.moved && Math.hypot(e.clientX - gesture.startScreen.x, e.clientY - gesture.startScreen.y) > MOVE_THRESHOLD) gesture.moved = true;
+  if(appState.panStart){ if (gesture.moved) { view.x = appState.panStart.vx - (e.clientX - appState.panStart.x)*(view.w/window.innerWidth); view.y = appState.panStart.vy - (e.clientY - appState.panStart.y)*(view.h/window.innerHeight); setView(); $('app-svg').classList.add('panning'); } return; }
   if(!gesture.active) return;
-  if(!gesture.moved && dist(pos, gesture.startPt)>6) gesture.moved=true;
-
-  const h = getStopNear(pos, 32); gesture.hoverStopId = h ? h.id : null;
-
+  const curr = pos, corridorsObj = buildCorridors(), h = getStopNear(curr, 36);
+  gesture.hoverStopId = h ? h.id : null;
   if(gesture.mode === 'segment' && gesture.lid){
-    if(!gesture.corridorDragMode && gesture.moved){
-      const a = stopById(gesture.anchorA), b = stopById(gesture.anchorB);
-      if(a && b){
-        const segDx = b.x - a.x, segDy = b.y - a.y, segLen = Math.hypot(segDx, segDy) || 1;
-        const dragDx = pos.x - gesture.startPt.x, dragDy = pos.y - gesture.startPt.y;
-        const perpComp = Math.abs((-segDy * dragDx + segDx * dragDy) / segLen);
-        const paraComp = Math.abs((segDx * dragDx + segDy * dragDy) / segLen);
+    const l = lineById(gesture.lid); if(!l) return;
+    if(gesture.touchLatch.size){ for(const sid of gesture.touchLatch) if(minDistToStopVisual(curr, stopById(sid), corridorsObj) > 46) gesture.touchLatch.delete(sid); }
+    if(h && !gesture.touchLatch.has(h.id)){
+      const inLine = l.nodes.includes(h.id);
+      
+      const distToStop = minDistToStopVisual(curr, h, corridorsObj);
+      const threshold = inLine ? 10 : 36;
 
-        if(gesture.corridorChunkKey && perpComp > paraComp && perpComp > 8){
-          gesture.corridorDragMode = 'reorder';
-          showCorridorHint(false);
-        }else if(paraComp > 8 || h){
-          gesture.corridorDragMode = 'insert';
-          showCorridorHint(false);
+      if (distToStop <= threshold) {
+        if(inLine) { 
+          const result = toggleStopOnLine(l, h.id, gesture.anchorA, gesture.anchorB, curr);
+          gesture.anchorA = result.a; gesture.anchorB = result.b;
+          if(result.changed) gesture.touchedStops.add(h.id); 
+        } else if (!gesture.touchedStops.has(h.id)) {
+          const result = toggleStopOnLine(l, h.id, gesture.anchorA, gesture.anchorB, curr);
+          gesture.anchorA = result.a; gesture.anchorB = result.b;
         }
+        gesture.touchLatch.add(h.id); pulseStop(h.id);
       }
+    } else if(!h && gesture.moved){
+      const bendKey = [gesture.anchorA, gesture.anchorB].sort().join('-');
+      if(!l.bends) l.bends = {}; l.bends[bendKey] = { x: curr.x, y: curr.y };
     }
-
-    if(gesture.corridorDragMode === 'reorder'){
-      const corridorsObj = buildCorridors();
-      const corridorsMap = corridorsObj.map;
-      const refs = corridorsObj.refs;
-
-      const key = gesture.corridorChunkKey;
-      const corridor = key ? corridorsMap[key] : null;
-
-      if(corridor && corridor.length>1 && key){
-        // usamos la normal estable basada en la referencia REAL del chunk (anti-flip NE/SW)
-        const nStable = stableNormalForChunkKeyWithRefs(key, refs);
-
-        const A = gesture.corridorChunkA, B = gesture.corridorChunkB;
-        const midx = (A.x+B.x)/2, midy=(A.y+B.y)/2;
-
-        const mx = pos.x - midx, my = pos.y - midy;
-        const perpOffset = mx*nStable.x + my*nStable.y;
-
-        const n = corridor.length;
-        let targetIdx = clamp(Math.round(perpOffset / LINE_SPACING + (n - 1)/2), 0, n - 1);
-        const currentIdx = corridor.indexOf(gesture.lid);
-
-        if(targetIdx !== currentIdx && currentIdx !== -1){
-          const newOrder = [...corridor];
-          newOrder.splice(currentIdx,1);
-          newOrder.splice(targetIdx,0,gesture.lid);
-          corridorOrders[key] = newOrder;
-        }
-      }
-    }else if(gesture.corridorDragMode === 'insert'){
-      if(h && gesture.lastAppliedHover !== h.id){ gesture.lastAppliedHover = h.id; toggleStationOnLineDuringInsert(lineById(gesture.lid), h.id); }
-      else if(!h){ gesture.lastAppliedHover = null; }
-    }
-
-    render.refresh();
-  } else if(gesture.mode==='extend' || gesture.mode==='newLine'){
+    render.drawMap(); return;
+  }
+  if(gesture.mode==='extend' || gesture.mode==='newLine'){
     if(h){
       const idx = gesture.liveNodes.indexOf(h.id);
-      if(idx === -1){ gesture.liveNodes.push(h.id); pulseStop(h.id); }
-      else if(idx < gesture.liveNodes.length - 1){ gesture.liveNodes = gesture.liveNodes.slice(0, idx+1); pulseStop(h.id); }
+      if(idx === -1) { gesture.liveNodes.push(h.id); pulseStop(h.id); }
+      else if(idx < gesture.liveNodes.length - 1) { gesture.liveNodes = gesture.liveNodes.slice(0, idx+1); pulseStop(h.id); }
       gesture.tempPoint = null;
     } else if(gesture.liveNodes.length){
-      const lastNode = stopById(gesture.liveNodes[gesture.liveNodes.length-1]);
-      const dx=pos.x-lastNode.x, dy=pos.y-lastNode.y;
-      const a=Math.round(Math.atan2(dy,dx)/(Math.PI/4))*(Math.PI/4);
-      gesture.tempPoint = { x: lastNode.x+Math.cos(a)*dist(pos, lastNode), y: lastNode.y+Math.sin(a)*dist(pos, lastNode) };
+      const ln = stopById(gesture.liveNodes[gesture.liveNodes.length-1]), dx=pos.x-ln.x, dy=pos.y-ln.y, a=Math.round(Math.atan2(dy,dx)/(Math.PI/4))*(Math.PI/4), d=dist(pos, ln);
+      gesture.tempPoint = { x: ln.x+Math.cos(a)*d, y: ln.y+Math.sin(a)*d };
     }
-    render.refresh();
+    render.drawMap();
   }
 });
 
 $('app-svg').addEventListener('pointerup', e => {
-  showCorridorHint(false);
-  if(appState.panStart){ appState.panStart=null; return; }
-  if(!gesture.active) return;
+  const dur = Date.now() - gesture.startTime; $('app-svg').classList.remove('panning');
+  if(!gesture.active && !appState.panStart) return;
+  
+  const wasEditing = (gesture.mode === 'segment' || gesture.mode === 'extend' || gesture.mode === 'newLine');
+  const wasTapEmpty = (gesture.mode === 'tapEmpty');
 
-  const h = getStopNear(getMousePos(e), 32);
-
-  if(gesture.mode==='tapEmpty' && !gesture.moved){
-    const sPos = { x: snap(getMousePos(e).x), y: snap(getMousePos(e).y) };
-    if(!getStopNear(sPos, 15)){ const id = 's'+Date.now(); stops.push({ id, ...sPos }); pulseStop(id); }
-  } else if(gesture.mode==='newLine' && gesture.liveNodes.length >= 2 && h){
-    lines.push({ id: 'l'+Date.now(), color: colorForNew(), nodes: [...gesture.liveNodes], bends: {} });
+  if (gesture.initialTargetStop && !gesture.moved && dur < TAP_THRESHOLD) { 
+    app.showStopPopup(gesture.initialTargetStop, e.clientX, e.clientY); 
+  } else if(wasTapEmpty && !gesture.moved && dur < TAP_THRESHOLD){
+    if(appState.selectedLineId){ 
+        appState.selectedLineId = null; 
+        render.drawUI(); 
+    }
+    else {
+      const sPos = { x: snap(getMousePos(e).x), y: snap(getMousePos(e).y) };
+      if(!getStopNear(sPos, 20)){ 
+        stops.push({ id: 's'+Date.now(), ...sPos, name: "", font: "sans-serif", style: "standard" }); 
+        pulseStop(stops[stops.length-1].id); 
+      }
+    }
+  } else if(gesture.mode==='newLine' && gesture.liveNodes.length >= 2){
+    const newLine = { id: 'l'+Date.now(), name: `Línea ${lines.length+1}`, color: colors.find(c => !new Set(lines.map(l=>l.color)).has(c)) || colors[0], nodes: [...gesture.liveNodes], bends: {} };
+    lines.push(newLine);
+    render.drawUI();
   } else if(gesture.mode==='extend' && gesture.lid){
-    const l = lineById(gesture.lid);
-    if(l){
-      if(gesture.liveNodes.length >= 2) l.nodes = (gesture.liveNodes[0] === l.nodes[0]) ? [...gesture.liveNodes] : [...gesture.liveNodes].reverse();
-      else lines = lines.filter(x => x.id !== l.id);
+    const l = lineById(gesture.lid); if(l){ 
+        if(gesture.liveNodes.length >= 2) {
+            l.nodes = (gesture.liveNodes[0] === l.nodes[0]) ? [...gesture.liveNodes] : [...gesture.liveNodes].reverse(); 
+        } else {
+            lines = lines.filter(x => x.id !== l.id); 
+            render.drawUI();
+        }
     }
   }
+  
+  if (gesture.lid) {
+    const l = lineById(gesture.lid);
+    if (l) cleanUpLine(l);
+  }
+  ensureSpatialConsistency();
 
-  gesture.active=false; render.refresh();
+  if ((gesture.moved && wasEditing) || (wasTapEmpty && !gesture.moved)) {
+     appState.selectedLineId = null;
+     render.drawUI();
+  }
+
+  gesture.active = false; gesture.mode = null; gesture.lid = null; gesture.hoverStopId = null; 
+  gesture.touchLatch = new Set(); gesture.touchedStops = new Set(); appState.panStart = null; 
+  render.drawMap();
 });
 
 const io = {
   export(){
-    const data = btoa(JSON.stringify({stops, lines, corridorOrders}));
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob(
-      [$('app-svg').outerHTML.replace('<svg', `<svg xmlns="http://www.w3.org/2000/svg" data-metro="${data}"`)],
-      {type:'image/svg+xml'}
-    ));
+    const data = btoa(JSON.stringify({stops, lines, corridorOrders})); const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([$('app-svg').outerHTML.replace('<svg', `<svg xmlns="http://www.w3.org/2000/svg" data-metro="${data}"`)], {type:'image/svg+xml'}));
     a.download='metro.svg'; a.click();
   },
   import(inp){
-    const r = new FileReader();
-    r.onload = e => {
+    const r = new FileReader(); r.onload = e => {
       try {
-        const doc = new DOMParser().parseFromString(e.target.result,"image/svg+xml");
-        const data = doc.querySelector('svg').dataset.metro;
-        const d = JSON.parse(atob(data));
-        stops=d.stops||[]; lines=d.lines||[]; corridorOrders=d.corridorOrders||{};
-        render.refresh();
-      } catch(err) { console.error("Error importing:", err); }
-    };
-    if(inp.files[0]) r.readAsText(inp.files[0]);
+        const d = JSON.parse(atob(new DOMParser().parseFromString(e.target.result,"image/xml").querySelector('svg').dataset.metro));
+        stops=d.stops||[]; lines=d.lines||[]; corridorOrders=d.corridorOrders||{}; render.refresh();
+      } catch(err) { console.error(err); }
+    }; if(inp.files[0]) r.readAsText(inp.files[0]);
   }
 };
-
 window.addEventListener('keydown', e => e.code==='Space'&&(appState.space=true));
 window.addEventListener('keyup', e => e.code==='Space'&&(appState.space=false));
 window.addEventListener('resize', setView);
 $('app-svg').addEventListener('wheel', setViewOnWheel, {passive:false});
-
+render.drawUI(); // Initial UI draw
 setView(); render.refresh();
 </script>
 </body>
